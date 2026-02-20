@@ -1,0 +1,25 @@
+name: supabase-generate-types
+
+on:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Init Supabase
+        run: supabase init
+
+      - name: Start local stack (Docker)
+        run: supabase db start
+
+      - name: Verify generated types match schema
+        run: |
+          supabase gen types typescript --local > src/shared/api/supabase/types/database.types.ts
+          git diff --ignore-space-at-eol --exit-code
