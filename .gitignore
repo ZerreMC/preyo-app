@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+AGENTS.md
 
 # next.js
 /.next/
@@ -46,4 +47,5 @@ next-env.d.ts
 # IDE
 .vscode/
 .zed/
+.agents/
 .idea/
