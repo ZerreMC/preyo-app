@@ -67,6 +67,6 @@ CREATE POLICY "realtime_messages_lists" ON realtime.messages
     topic LIKE 'list:%' AND
     security.is_list_member(
             (substring(topic from 6))::uuid,
-            auth.uid()
+            (select auth.uid())
     )
     );

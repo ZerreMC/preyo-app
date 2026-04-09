@@ -86,42 +86,20 @@ ALTER TABLE public.shopping_list_collaborators
 CREATE POLICY lists_select_member ON public.shopping_lists
     FOR SELECT
     TO authenticated
-    USING (security.is_list_member(id, auth.uid()));
+    USING (security.is_list_member(id, (select auth.uid())));
 
 CREATE POLICY items_select_member ON public.shopping_list_items
     FOR SELECT
     TO authenticated
-    USING (security.is_list_member(list_id, auth.uid()));
+    USING (security.is_list_member(list_id, (select auth.uid())));
 
 CREATE POLICY collab_select_member ON public.shopping_list_collaborators
     FOR SELECT
     TO authenticated
-    USING (security.is_list_member(list_id, auth.uid()));
+    USING (security.is_list_member(list_id, (select auth.uid())));
 
 CREATE POLICY lists_insert_owner ON public.shopping_lists
     FOR INSERT
     TO authenticated
-    WITH CHECK (owner_id = auth.uid());
-
-CREATE POLICY lists_no_update ON public.shopping_lists
-    FOR UPDATE
-    TO authenticated
-    USING (false)
-    WITH CHECK (false);
-
-CREATE POLICY lists_no_delete ON public.shopping_lists
-    FOR DELETE
-    TO authenticated
-    USING (false);
-
-CREATE POLICY items_no_direct_write ON public.shopping_list_items
-    FOR ALL
-    TO authenticated
-    USING (false)
-    WITH CHECK (false);
-
-CREATE POLICY collab_no_direct_write ON public.shopping_list_collaborators
-    FOR ALL
-    TO authenticated
-    USING (false)
-    WITH CHECK (false);
+    WITH CHECK (owner_id = (select auth.uid()));
+
