@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest",
+    "db:migrate:remote": "node scripts/db/apply-migrations.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

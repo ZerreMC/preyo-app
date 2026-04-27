@@ -58,7 +58,7 @@ function mapRpcErrorCode(message: string): RepositoryErrorCode {
 }
 
 export class SupabaseListRepository implements ListRepository {
-    constructor(private readonly supabase: SupabaseClient<any>) {
+    constructor(private readonly supabase: SupabaseClient) {
     }
 
     async getByIdForWrite(listId: Uuid): Promise<ShoppingList | null> {
@@ -82,7 +82,7 @@ export class SupabaseListRepository implements ListRepository {
             title: listRow.title,
             status: listRow.status,
             transportCapacityG: listRow.transport_capacity_g,
-            items: (listRow.items ?? []).map((row: any) => ({
+            items: (listRow.items ?? []).map((row: ShoppingListItemRow) => ({
                 id: row.id as Uuid,
                 productRef: row.product_ref,
                 name: row.name,
