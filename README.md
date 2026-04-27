@@ -1,16 +1,22 @@
 # preyo-app
 Frontend de Preyo
 
-## Getting Started
+## Desarrollo
+Este proyecto usa **pnpm** obligatoriamente.
 
-First, run the development server:
-
+### Iniciar servidor
 ```bash
-npm run dev
-# or
-yarn dev
-# or
 pnpm dev
-# or
-bun dev
 ```
+
+### Comandos de validación
+```bash
+# Verificar conexión con Supabase (LXC via Tailscale)
+curl http://100.69.204.118:8000
+
+# QA
+pnpm lint
+pnpm typecheck
+pnpm test
+```
+

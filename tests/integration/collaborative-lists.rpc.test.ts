@@ -1,24 +1,52 @@
-import {describe, it, expect, beforeAll} from 'vitest';
-import {createTestUser, createTestList, insertListCollaborator} from '../utils/supabase';
+import {describe, it, expect, beforeAll, type TestContext} from 'vitest';
+import {
+    canRunSupabaseIntegrationTests,
+    createTestList,
+    createTestUser,
+    getSupabaseIntegrationFailureSkipReason,
+    insertListCollaborator,
+    supabaseIntegrationSkipReason,
+} from '../utils/supabase';
 import {getCollaborativeList, type Uuid} from '../../src/features/collaborative-lists';
+import type {SupabaseClient, User} from '@supabase/supabase-js';
 
 const uuid = () => crypto.randomUUID() as Uuid;
+const describeIntegration = canRunSupabaseIntegrationTests ? describe : describe.skip;
 
-describe('Collaborative Lists RPC', () => {
-    let client: any;
-    let user: any;
+type RpcTestSetup = {
+    client: SupabaseClient;
+    user: User;
+};
+
+if (supabaseIntegrationSkipReason) {
+    console.warn(supabaseIntegrationSkipReason);
+}
+
+describeIntegration('Collaborative Lists RPC', () => {
+    let setup: RpcTestSetup | null = null;
+    let dynamicSkipReason: string | null = null;
 
     beforeAll(async () => {
-        const testSetup = await createTestUser();
-        client = testSetup.client;
-        user = testSetup.user;
+        try {
+            setup = await createTestUser();
+        } catch (error) {
+            const skipReason = getSupabaseIntegrationFailureSkipReason(error);
+
+            if (!skipReason) throw error;
+
+            dynamicSkipReason = skipReason;
+            console.warn(skipReason);
+        }
     });
 
-    it('cl_add_item inserta', async () => {
-        const list = await createTestList(client, user.id);
+    it('cl_add_item inserta', async (context) => {
+        const current = getSetupOrSkip(context, setup, dynamicSkipReason);
+        if (!current) return;
+
+        const list = await createTestList(current.client, current.user.id);
         const itemId = uuid();
 
-        const {error} = await client.rpc('cl_add_item', {
+        const {error} = await current.client.rpc('cl_add_item', {
             p_command_id: uuid(),
             p_list_id: list.id,
             p_item_id: itemId,
@@ -30,13 +58,16 @@ describe('Collaborative Lists RPC', () => {
 
         expect(error).toBeNull();
 
-        const updatedList = await getCollaborativeList(client, list.id as Uuid);
+        const updatedList = await getCollaborativeList(current.client, list.id as Uuid);
         expect(updatedList?.items).toHaveLength(1);
         expect(updatedList?.items[0].id).toBe(itemId);
     });
 
-    it('retry (idempotencia) no rompe', async () => {
-        const list = await createTestList(client, user.id);
+    it('retry (idempotencia) no rompe', async (context) => {
+        const current = getSetupOrSkip(context, setup, dynamicSkipReason);
+        if (!current) return;
+
+        const list = await createTestList(current.client, current.user.id);
         const itemId = uuid();
         const commandId = uuid();
 
@@ -50,21 +81,24 @@ describe('Collaborative Lists RPC', () => {
             p_estimated_weight_g: 200
         };
 
-        const {error: error1} = await client.rpc('cl_add_item', payload);
+        const {error: error1} = await current.client.rpc('cl_add_item', payload);
         expect(error1).toBeNull();
 
-        const {error: error2} = await client.rpc('cl_add_item', payload);
+        const {error: error2} = await current.client.rpc('cl_add_item', payload);
         expect(error2).toBeNull();
 
-        const updatedList = await getCollaborativeList(client, list.id as Uuid);
+        const updatedList = await getCollaborativeList(current.client, list.id as Uuid);
         expect(updatedList?.items).toHaveLength(1);
     });
 
-    it('cl_remove_item elimina', async () => {
-        const list = await createTestList(client, user.id);
+    it('cl_remove_item elimina', async (context) => {
+        const current = getSetupOrSkip(context, setup, dynamicSkipReason);
+        if (!current) return;
+
+        const list = await createTestList(current.client, current.user.id);
         const itemId = uuid();
 
-        await client.rpc('cl_add_item', {
+        await current.client.rpc('cl_add_item', {
             p_command_id: uuid(),
             p_list_id: list.id,
             p_item_id: itemId,
@@ -74,7 +108,7 @@ describe('Collaborative Lists RPC', () => {
             p_estimated_weight_g: 300
         });
 
-        const {error} = await client.rpc('cl_remove_item', {
+        const {error} = await current.client.rpc('cl_remove_item', {
             p_command_id: uuid(),
             p_list_id: list.id,
             p_item_id: itemId
@@ -82,15 +116,18 @@ describe('Collaborative Lists RPC', () => {
 
         expect(error).toBeNull();
 
-        const updatedList = await getCollaborativeList(client, list.id as Uuid);
+        const updatedList = await getCollaborativeList(current.client, list.id as Uuid);
         expect(updatedList?.items).toHaveLength(0);
     });
 
-    it('cl_toggle_item cambia estado', async () => {
-        const list = await createTestList(client, user.id);
+    it('cl_toggle_item cambia estado', async (context) => {
+        const current = getSetupOrSkip(context, setup, dynamicSkipReason);
+        if (!current) return;
+
+        const list = await createTestList(current.client, current.user.id);
         const itemId = uuid();
 
-        await client.rpc('cl_add_item', {
+        await current.client.rpc('cl_add_item', {
             p_command_id: uuid(),
             p_list_id: list.id,
             p_item_id: itemId,
@@ -100,7 +137,7 @@ describe('Collaborative Lists RPC', () => {
             p_estimated_weight_g: 1000
         });
 
-        const {error} = await client.rpc('cl_toggle_item', {
+        const {error} = await current.client.rpc('cl_toggle_item', {
             p_command_id: uuid(),
             p_list_id: list.id,
             p_item_id: itemId,
@@ -109,14 +146,17 @@ describe('Collaborative Lists RPC', () => {
 
         expect(error).toBeNull();
 
-        const updatedList = await getCollaborativeList(client, list.id as Uuid);
+        const updatedList = await getCollaborativeList(current.client, list.id as Uuid);
         expect(updatedList?.items[0].checked).toBe(true);
     });
 
-    it('error al superar capacidad', async () => {
-        const list = await createTestList(client, user.id);
+    it('error al superar capacidad', async (context) => {
+        const current = getSetupOrSkip(context, setup, dynamicSkipReason);
+        if (!current) return;
 
-        const {error} = await client.rpc('cl_add_item', {
+        const list = await createTestList(current.client, current.user.id);
+
+        const {error} = await current.client.rpc('cl_add_item', {
             p_command_id: uuid(),
             p_list_id: list.id,
             p_item_id: uuid(),
@@ -130,11 +170,14 @@ describe('Collaborative Lists RPC', () => {
         expect(error?.message).toContain('CAPACITY_EXCEEDED');
     });
 
-    it('error duplicado no inserta dos veces', async () => {
-        const list = await createTestList(client, user.id);
+    it('error duplicado no inserta dos veces', async (context) => {
+        const current = getSetupOrSkip(context, setup, dynamicSkipReason);
+        if (!current) return;
+
+        const list = await createTestList(current.client, current.user.id);
         const ref = 'SAME_PROD';
 
-        const {error: error1} = await client.rpc('cl_add_item', {
+        const {error: error1} = await current.client.rpc('cl_add_item', {
             p_command_id: uuid(),
             p_list_id: list.id,
             p_item_id: uuid(),
@@ -145,7 +188,7 @@ describe('Collaborative Lists RPC', () => {
         });
         expect(error1).toBeNull();
 
-        const {error: error2} = await client.rpc('cl_add_item', {
+        const {error: error2} = await current.client.rpc('cl_add_item', {
             p_command_id: uuid(),
             p_list_id: list.id,
             p_item_id: uuid(),
@@ -158,10 +201,12 @@ describe('Collaborative Lists RPC', () => {
         expect(error2).not.toBeNull();
         expect(error2?.message).toContain('DUPLICATE_PRODUCT');
 
-        const updatedList = await getCollaborativeList(client, list.id as Uuid);
+        const updatedList = await getCollaborativeList(current.client, list.id as Uuid);
         expect(updatedList?.items).toHaveLength(1);
     });
-    it('mantiene consistencia bajo concurrencia real entre dos clientes', async () => {
+    it('mantiene consistencia bajo concurrencia real entre dos clientes', async (context) => {
+        if (!getSetupOrSkip(context, setup, dynamicSkipReason)) return;
+
         const ownerSetup = await createTestUser();
         const collaboratorSetup = await createTestUser();
 
@@ -224,3 +269,18 @@ describe('Collaborative Lists RPC', () => {
         expect(matchingItems).toHaveLength(1);
     });
 });
+
+function getSetupOrSkip(
+    context: TestContext,
+    setup: RpcTestSetup | null,
+    skipReason: string | null,
+): RpcTestSetup | null {
+    if (skipReason) {
+        context.skip(skipReason);
+        return null;
+    }
+
+    if (!setup) throw new Error('Supabase integration test setup did not run');
+
+    return setup;
+}
