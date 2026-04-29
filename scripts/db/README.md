@@ -103,5 +103,4 @@ ssh yisus@100.69.204.118 \
 - `scripts/db/apply-migrations.mjs`
 - `scripts/db/README.md`
 - `supabase/migrations/*.sql`
-- `.env.example` (sin contraseñas reales)
 - `package.json`
