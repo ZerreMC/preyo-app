@@ -7,16 +7,9 @@ interface AppShellProps {
 
 export function AppShell({children}: AppShellProps) {
     return (
-        <div className="relative flex min-h-dvh w-full flex-col bg-(--color-bg-main) font-sans">
-            {/* Decoraciones opcionales */}
-            <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-                <div
-                    className="absolute -right-24 -top-24 size-80 rounded-full bg-[rgba(57,184,107,0.18)] opacity-50 blur-3xl"/>
-                <div
-                    className="absolute -left-24 top-1/3 size-72 rounded-full bg-[rgba(255,138,61,0.16)] opacity-40 blur-3xl"/>
-            </div>
-
-            <main className="relative z-10 flex-1 overflow-y-auto px-4 pb-28 pt-6">
+        <div
+            className="min-h-dvh bg-[linear-gradient(135deg,#ECF8EE_0%,#FFF4E8_50%,#ECF8EE_100%)] text-text-primary">
+            <main className="mx-auto min-h-dvh w-full max-w-107.5 px-4 pb-28 pt-6 md:max-w-5xl md:px-8">
                 {children}
             </main>
 

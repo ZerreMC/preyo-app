@@ -2,10 +2,10 @@ import {Button, Card, CardContent, CardDescription, CardHeader, CardTitle} from 
 
 export default function Home() {
     return (
-        <main className="min-h-dvh bg-(--color-bg-main) px-4 py-10 text-(--color-text-primary)">
+        <main className="min-h-dvh bg-bg-main px-4 py-10 text-text-primary">
             <div className="mx-auto max-w-md space-y-6">
                 <section className="space-y-3">
-                    <p className="text-sm font-medium text-(--color-brand-active)">
+                    <p className="text-sm font-medium text-brand-active">
                         Preyo
                     </p>
 
@@ -13,7 +13,7 @@ export default function Home() {
                         Compra mejor y ahorra más.
                     </h1>
 
-                    <p className="text-sm leading-6 text-(--color-text-muted)">
+                    <p className="text-sm leading-6 text-text-muted">
                         Base del MVP: tokens
                     </p>
                 </section>
