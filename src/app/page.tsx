@@ -1,36 +1,45 @@
+import Link from "next/link";
 import {Button, Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/ui";
 
 export default function Home() {
     return (
-        <main className="min-h-dvh bg-bg-main px-4 py-10 text-text-primary">
+        <main className="min-h-dvh bg-bg-main px-4 py-10 text-(--color-text-primary)">
             <div className="mx-auto max-w-md space-y-6">
-                <section className="space-y-3">
-                    <p className="text-sm font-medium text-brand-active">
+                <section className="space-y-3 text-center">
+                    <p className="text-sm font-bold tracking-widest uppercase text-(--color-brand)">
                         Preyo
                     </p>
 
-                    <h1 className="text-3xl font-bold tracking-tight">
+                    <h1 className="text-4xl font-black tracking-tight">
                         Compra mejor y ahorra más.
                     </h1>
 
-                    <p className="text-sm leading-6 text-text-muted">
-                        Base del MVP: tokens
+                    <p className="text-sm leading-6 text-(--color-text-muted)">
+                        El comparador inteligente y gestor de listas colaborativo para tu familia.
                     </p>
                 </section>
 
                 <Card variant="glass">
                     <CardHeader>
-                        <CardTitle>UI foundation</CardTitle>
+                        <CardTitle>Comienza ahora</CardTitle>
                         <CardDescription>
-                            Componentes base
+                            Accede a tu cuenta o crea una nueva para empezar a gestionar tus listas.
                         </CardDescription>
                     </CardHeader>
 
-                    <CardContent className="flex gap-3">
-                        <Button>Empezar</Button>
-                        <Button variant="outline">Ver demo</Button>
+                    <CardContent className="flex flex-col gap-3">
+                        <Link href="/sign-in" className="w-full">
+                            <Button fullWidth size="lg">Iniciar sesión</Button>
+                        </Link>
+                        <Link href="/sign-up" className="w-full">
+                            <Button variant="outline" fullWidth size="lg">Crear cuenta</Button>
+                        </Link>
                     </CardContent>
                 </Card>
+
+                <p className="text-center text-xs text-(--color-text-muted)">
+                    Versión MVP v0.1.0
+                </p>
             </div>
         </main>
     );

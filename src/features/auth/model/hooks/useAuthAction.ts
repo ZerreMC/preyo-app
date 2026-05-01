@@ -9,6 +9,7 @@ export type AuthMode = "sign-in" | "sign-up";
 interface AuthPayload {
     email: string;
     password: string;
+    displayName?: string;
 }
 
 export function useAuthAction(mode: AuthMode) {
@@ -17,39 +18,51 @@ export function useAuthAction(mode: AuthMode) {
     const [message, setMessage] = useState<string | null>(null);
     const [isPending, setIsPending] = useState(false);
 
-    async function execute({email, password}: AuthPayload) {
+    async function execute({email, password, displayName}: AuthPayload) {
         setError(null);
         setMessage(null);
         setIsPending(true);
 
-        const supabase = createClient();
+        try {
+            const supabase = createClient();
 
-        const result =
-            mode === "sign-in"
-                ? await supabase.auth.signInWithPassword({email, password})
-                : await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        emailRedirectTo: `${window.location.origin}/auth/callback`,
-                    },
-                });
+            const result =
+                mode === "sign-in"
+                    ? await supabase.auth.signInWithPassword({email, password})
+                    : await supabase.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                            emailRedirectTo: `${window.location.origin}/auth/callback`,
+                            data: {
+                                display_name: displayName,
+                            },
+                        },
+                    });
 
-        setIsPending(false);
+            if (result.error) {
+                setError(result.error.message);
+                return;
+            }
 
-        if (result.error) {
-            setError(result.error.message);
-            return;
+            if (mode === "sign-up" && !result.data.session) {
+                setMessage("Cuenta creada. Revisa tu correo para confirmar el registro.");
+                return;
+            }
+
+            router.replace("/lists");
+            router.refresh();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Ocurrió un error inesperado");
+        } finally {
+            setIsPending(false);
         }
-
-        if (mode === "sign-up" && !result.data.session) {
-            setMessage("Cuenta creada. Revisa tu correo para confirmar el registro.");
-            return;
-        }
-
-        router.replace("/lists");
-        router.refresh();
     }
 
-    return {execute, error, message, isPending};
+    return {
+        execute,
+        error,
+        message,
+        isPending,
+    };
 }
