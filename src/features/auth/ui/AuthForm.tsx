@@ -34,7 +34,7 @@ export function AuthForm({mode}: AuthFormProps) {
         >
             <div className="space-y-1">
                 <h1 className="text-2xl font-black tracking-tight">{title}</h1>
-                <p className="text-sm text-(--color-text-muted)">
+                <p className="text-sm text-text-muted">
                     Accede a Preyo para gestionar tus listas y comparar precios.
                 </p>
             </div>
@@ -59,13 +59,13 @@ export function AuthForm({mode}: AuthFormProps) {
             </div>
 
             {error ? (
-                <p role="alert" className="text-sm text-(--color-error)">
+                <p role="alert" className="text-sm text-error">
                     {error}
                 </p>
             ) : null}
 
             {message ? (
-                <p role="status" className="text-sm text-(--color-brand-active)">
+                <p role="status" className="text-sm text-brand-active">
                     {message}
                 </p>
             ) : null}
