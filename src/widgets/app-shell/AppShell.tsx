@@ -7,13 +7,16 @@ interface AppShellProps {
 
 export function AppShell({children}: AppShellProps) {
     return (
-        <div
-            className="min-h-dvh bg-[linear-gradient(135deg,#ECF8EE_0%,#FFF4E8_50%,#ECF8EE_100%)] text-text-primary">
-            <main className="mx-auto min-h-dvh w-full max-w-107.5 px-4 pb-28 pt-6 md:max-w-5xl md:px-8">
-                {children}
-            </main>
+        <div className="min-h-dvh bg-[linear-gradient(135deg,#ECF8EE_0%,#FFF4E8_50%,#ECF8EE_100%)] text-text-primary">
+            <div className="mx-auto flex min-h-dvh w-full max-w-107.5 flex-col">
+                <main className="flex-1 px-4 pb-4 pt-6">
+                    {children}
+                </main>
 
-            <BottomNav/>
+                <div className="sticky bottom-0 z-50">
+                    <BottomNav/>
+                </div>
+            </div>
         </div>
     );
 }
