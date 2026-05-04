@@ -92,10 +92,15 @@ describe('useCollaborativeList', () => {
     it('re-fetches when a broadcast UPDATE arrives', async () => {
         const mockList1 = createCollaborativeListReadModel({id: listId, title: 'My list'});
         const mockList2 = createCollaborativeListReadModel({id: listId, title: 'Updated list'});
- 
+
+        // Use mockResolvedValue (non-Once) as a stable fallback after the two
+        // meaningful responses. React 19 StrictMode mounts effects twice, so the spy
+        // may be called more than twice before the broadcast even fires. Without a
+        // fallback, extra calls return `undefined` and can corrupt hook state.
         const getListSpy = vi.spyOn(getCollaborativeListModule, 'getCollaborativeList')
             .mockResolvedValueOnce(mockList1)
-            .mockResolvedValueOnce(mockList2);
+            .mockResolvedValueOnce(mockList2)
+            .mockResolvedValue(mockList2); // fallback for any StrictMode extra calls
 
         const {result} = renderHook(() =>
             useCollaborativeList({supabase: mockSupabase, listId}),
@@ -111,14 +116,25 @@ describe('useCollaborativeList', () => {
             throw new Error('Expected UPDATE broadcast callback to be registered');
         }
 
+        // Snapshot the call count *before* triggering the broadcast.
+        // Asserting an absolute number like toHaveBeenCalledTimes(2) is fragile
+        // under StrictMode because effects (and their fetches) run twice on mount.
+        // A relative delta of exactly +1 captures the real intent: one broadcast
+        // event triggers exactly one re-fetch, regardless of how many times the
+        // effect ran during mounting.
+        const callsBefore = getListSpy.mock.calls.length;
+
         broadcastCallback({});
 
         await waitFor(() => expect(result.current.list).toEqual(mockList2));
-        expect(getListSpy).toHaveBeenCalledTimes(2);
+
+        const callsAfter = getListSpy.mock.calls.length;
+        expect(callsAfter).toBeGreaterThan(callsBefore);
+        expect(callsAfter - callsBefore).toBe(1); // exactly one re-fetch per UPDATE
     });
 
     it('surfaces CHANNEL_ERROR without wiping an existing list', async () => {
-        // A list was already loaded; channel then fails
+        // A list was already loaded; a channel then fails
         const mockList = createCollaborativeListReadModel({id: listId, title: 'Already loaded'});
         vi.spyOn(getCollaborativeListModule, 'getCollaborativeList').mockResolvedValue(mockList);
 
@@ -127,7 +143,7 @@ describe('useCollaborativeList', () => {
             callback?.(realtimeStatus.subscribed, undefined);
             return mockChannel;
         });
- 
+
         const {result} = renderHook(() =>
             useCollaborativeList({supabase: mockSupabase, listId}),
         );
@@ -201,7 +217,7 @@ function createCollaborativeListReadModel(
     };
 }
 
-function isBroadcastFilter(value: unknown, event: string): value is {event: string} {
+function isBroadcastFilter(value: unknown, event: string): value is { event: string } {
     return (
         typeof value === 'object' &&
         value !== null &&
