@@ -9,6 +9,7 @@
     /* Backgrounds */
     --color-bg-main: #FFFDF8;
     --color-bg-soft: #FFF4E8;
+    --color-divider: #E9E5DC;
 
     /* Text */
     --color-text-primary: #1F2A24;
@@ -25,6 +26,7 @@
     --radius-xl: 16px;
     --radius-2xl: 20px;
     --radius-3xl: 24px;
+    --radius-4xl: 32px;
 
     /* Font */
     --font-sans: --font-inter, system-ui, sans-serif;
