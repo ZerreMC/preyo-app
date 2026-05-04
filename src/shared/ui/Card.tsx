@@ -50,7 +50,7 @@ export function CardTitle({
     return (
         <h3
             className={cn(
-                "text-base font-semibold leading-tight text-(--color-text-primary)",
+                "text-base font-semibold leading-tight text-text-primary",
                 className,
             )}
             {...props}
@@ -65,7 +65,7 @@ export function CardDescription({
     return (
         <p
             className={cn(
-                "text-sm leading-relaxed text-(--color-text-muted)",
+                "text-sm leading-relaxed text-text-muted",
                 className,
             )}
             {...props}

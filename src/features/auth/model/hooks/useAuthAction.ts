@@ -50,7 +50,7 @@ export function useAuthAction(mode: AuthMode) {
                 return;
             }
 
-            router.replace("/lists");
+            router.replace("/");
             router.refresh();
         } catch (e) {
             setError(e instanceof Error ? e.message : "Ocurrió un error inesperado");
