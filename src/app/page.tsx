@@ -1,46 +1,26 @@
-import Link from "next/link";
-import {Button, Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/shared/ui";
+import {createClient} from "@/shared/api/supabase/serverClient";
+import LandingPage from "./(public)/LandingPage";
+import {AppShell} from "@/widgets/app-shell/AppShell";
 
-export default function Home() {
+export default async function IndexPage() {
+    const supabase = await createClient();
+
+    const {
+        data: {user},
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+        return <LandingPage/>;
+    }
+
     return (
-        <main className="min-h-dvh bg-bg-main px-4 py-10 text-(--color-text-primary)">
-            <div className="mx-auto max-w-md space-y-6">
-                <section className="space-y-3 text-center">
-                    <p className="text-sm font-bold tracking-widest uppercase text-(--color-brand)">
-                        Preyo
-                    </p>
-
-                    <h1 className="text-4xl font-black tracking-tight">
-                        Compra mejor y ahorra más.
-                    </h1>
-
-                    <p className="text-sm leading-6 text-(--color-text-muted)">
-                        El comparador inteligente y gestor de listas colaborativo para tu familia.
-                    </p>
-                </section>
-
-                <Card variant="glass">
-                    <CardHeader>
-                        <CardTitle>Comienza ahora</CardTitle>
-                        <CardDescription>
-                            Accede a tu cuenta o crea una nueva para empezar a gestionar tus listas.
-                        </CardDescription>
-                    </CardHeader>
-
-                    <CardContent className="flex flex-col gap-3">
-                        <Link href="/sign-in" className="w-full">
-                            <Button fullWidth size="lg">Iniciar sesión</Button>
-                        </Link>
-                        <Link href="/sign-up" className="w-full">
-                            <Button variant="outline" fullWidth size="lg">Crear cuenta</Button>
-                        </Link>
-                    </CardContent>
-                </Card>
-
-                <p className="text-center text-xs text-(--color-text-muted)">
-                    Versión MVP v0.1.0
+        <AppShell>
+            <section className="space-y-2">
+                <h1 className="text-2xl font-black">Inicio</h1>
+                <p className="text-sm text-text-muted">
+                    Pantalla Inicio
                 </p>
-            </div>
-        </main>
+            </section>
+        </AppShell>
     );
 }

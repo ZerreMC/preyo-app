@@ -15,7 +15,7 @@ export function Input({className, error, label, id: externalId, ...props}: Input
     return (
         <div className="space-y-1.5">
             {label && (
-                <label htmlFor={inputId} className="text-sm font-medium text-(--color-text-primary)">
+                <label htmlFor={inputId} className="text-sm font-medium text-text-primary">
                     {label}
                 </label>
             )}
@@ -25,16 +25,16 @@ export function Input({className, error, label, id: externalId, ...props}: Input
                 aria-describedby={errorId}
                 className={cn(
                     "min-h-11 w-full rounded-xl border bg-white px-4 text-sm transition",
-                    "border-black/10 text-(--color-text-primary) placeholder:text-(--color-text-muted)",
-                    "focus:border-(--color-brand) focus:outline-none focus:ring-[3px] focus:ring-[rgba(57,184,107,0.25)]",
+                    "border-black/10 text-text-primary placeholder:text-text-muted",
+                    "focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-[rgba(57,184,107,0.25)]",
                     "disabled:cursor-not-allowed disabled:bg-black/5 disabled:opacity-60",
-                    error && "border-(--color-error) focus:border-(--color-error)",
+                    error && "border-error focus:border-error",
                     className,
                 )}
                 {...props}
             />
             {error ? (
-                <p id={errorId} role="alert" className="text-xs text-(--color-error)">
+                <p id={errorId} role="alert" className="text-xs text-error">
                     {error}
                 </p>
             ) : null}

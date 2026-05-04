@@ -1,8 +1,10 @@
 export const routes = {
+    landing: "/",
     home: "/",
     signIn: "/sign-in",
     signUp: "/sign-up",
     lists: "/lists",
+    listDetail: (listId: string) => `/lists/${listId}`,
     compare: "/compare",
     settings: "/settings",
 } as const;
