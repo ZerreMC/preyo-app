@@ -57,7 +57,7 @@ export function Button({
 
     const variants: Record<ButtonVariant, string> = {
         primary:
-            "text-white shadow-sm shadow-[rgba(57,184,107,0.35)] " +
+            "text-white shadow-[0_6px_18px_rgba(57,184,107,0.3)] " +
             "bg-linear-to-b from-brand to-brand-active hover:brightness-[1.02] active:brightness-[0.98]",
         secondary:
             "bg-[rgba(57,184,107,0.14)] text-brand-active hover:bg-[rgba(57,184,107,0.18)] active:bg-[rgba(57,184,107,0.22)]",

@@ -2,82 +2,62 @@
 
 import Link from "next/link";
 import {useState, type ComponentProps} from "react";
-import {motion} from "motion/react";
-import {User, Mail, Lock, Eye, EyeOff} from "lucide-react";
-import {Button, Checkbox, Input} from "@/shared/ui";
-import {useAuthAction} from "../model/hooks/useAuthAction";
+import {Eye, EyeOff, Lock, Mail, User} from "lucide-react";
+import {Button, Input} from "@/shared/ui";
 
 type FormSubmitHandler = NonNullable<ComponentProps<"form">["onSubmit"]>;
 
-interface FormErrors {
+export type SignUpInput = {
+    displayName: string;
+    email: string;
+    password: string;
+};
+
+type FormErrors = {
     displayName?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
-    privacy?: string;
-}
+    form?: string;
+};
 
-function getPasswordStrength(password: string) {
-    if (password.length === 0) {
-        return {label: "", width: "0%", color: "transparent"};
-    }
+type SignUpFormProps = {
+    onSignUp: (input: SignUpInput) => Promise<string | null> | string | null;
+    isLoading?: boolean;
+    error?: string | null;
+};
 
-    if (password.length < 6) {
-        return {label: "Débil", width: "33%", color: "var(--color-error)"};
-    }
-
-    if (password.length < 10) {
-        return {
-            label: "Media",
-            width: "66%",
-            color: "var(--color-accent-highlight)",
-        };
-    }
-
-    return {label: "Fuerte", width: "100%", color: "var(--color-brand)"};
-}
-
-export function SignUpForm() {
-    const {execute, error, message, isPending} = useAuthAction("sign-up");
-
-    const [password, setPassword] = useState("");
-    const [privacy, setPrivacy] = useState(false);
+export function SignUpForm({onSignUp, isLoading = false, error}: SignUpFormProps) {
+    const [errors, setErrors] = useState<FormErrors>({});
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [errors, setErrors] = useState<FormErrors>({});
-
-    const strength = getPasswordStrength(password);
 
     const handleSubmit: FormSubmitHandler = async (event) => {
         event.preventDefault();
 
         const formData = new FormData(event.currentTarget);
-
         const displayName = String(formData.get("displayName") ?? "").trim();
         const email = String(formData.get("email") ?? "").trim();
-        const currentPassword = String(formData.get("password") ?? "");
+        const password = String(formData.get("password") ?? "");
         const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
         const nextErrors: FormErrors = {};
 
         if (!displayName) {
-            nextErrors.displayName = "Introduce tu nombre visible";
+            nextErrors.displayName = "Introduce tu nombre visible.";
         }
 
         if (!email.includes("@")) {
-            nextErrors.email = "Correo no válido";
+            nextErrors.email = "Introduce un correo válido.";
         }
 
-        if (currentPassword.length < 6) {
-            nextErrors.password = "Mínimo 6 caracteres";
+        if (password.length < 6) {
+            nextErrors.password = "La contraseña debe tener al menos 6 caracteres.";
         }
 
-        if (currentPassword !== confirmPassword) {
-            nextErrors.confirmPassword = "Las contraseñas no coinciden";
-        }
-
-        if (!privacy) {
-            nextErrors.privacy = "Debes aceptar la política de privacidad";
+        if (password !== confirmPassword) {
+            nextErrors.confirmPassword = "Las contraseñas no coinciden.";
+            nextErrors.form = "Confirma que ambas contraseñas coinciden.";
         }
 
         setErrors(nextErrors);
@@ -86,97 +66,80 @@ export function SignUpForm() {
             return;
         }
 
-        await execute({
-            displayName,
-            email,
-            password: currentPassword,
-        });
+        const serverError = await onSignUp({displayName, email, password});
+        if (serverError) {
+            setErrors({form: serverError});
+        }
     };
 
+    const bannerError = error ?? errors.form;
+
     return (
-        <motion.form
-            initial={{opacity: 0, y: 20}}
-            animate={{opacity: 1, y: 0}}
-            transition={{duration: 0.4, ease: "easeOut"}}
+        <form
+            noValidate
             onSubmit={handleSubmit}
-            className="glass-strong space-y-5 rounded-3xl p-6"
+            className="mx-auto w-full max-w-sm rounded-3xl border border-white/70 bg-[rgba(255,255,255,0.78)] p-7 shadow-[0_2px_10px_rgba(0,0,0,0.04)] backdrop-blur-xl"
         >
-            <div className="space-y-1">
-                <h1 className="text-3xl font-black tracking-tight text-text-primary">
-                    Crea tu cuenta
-                </h1>
-                <p className="text-sm leading-6 text-text-muted">
-                    Únete a Preyo y empieza a ahorrar en tus compras.
-                </p>
+            <div className="mb-7 space-y-5">
+                <div
+                    className="flex size-12 items-center justify-center rounded-2xl bg-bg-soft text-2xl font-black text-brand-active shadow-sm">
+                    P
+                </div>
+
+                <div className="space-y-1.5">
+                    <h1 className="text-2xl font-black tracking-normal text-text-primary">
+                        Crear cuenta
+                    </h1>
+                    <p className="text-sm leading-6 text-text-muted">
+                        Crea tu cuenta para preparar compras compartidas y comparar precios.
+                    </p>
+                </div>
             </div>
 
             <div className="space-y-4">
-                <div className="relative">
-                    <Input
-                        label="Nombre visible"
-                        name="displayName"
-                        type="text"
-                        autoComplete="name"
-                        placeholder="Tu nombre"
-                        error={errors.displayName}
-                        required
-                        className="pl-11"
-                    />
-                    <User className="absolute bottom-3 left-4 size-5 text-text-muted"/>
-                </div>
+                <Input
+                    label="Nombre visible"
+                    name="displayName"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Tu nombre"
+                    leftIcon={User}
+                    errorMessage={errors.displayName}
+                    required
+                />
+
+                <Input
+                    label="Correo electrónico"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="tu@email.com"
+                    leftIcon={Mail}
+                    errorMessage={errors.email}
+                    required
+                />
 
                 <div className="relative">
                     <Input
-                        label="Correo electrónico"
-                        name="email"
-                        type="email"
-                        autoComplete="email"
-                        placeholder="tu@email.com"
-                        error={errors.email}
+                        label="Contraseña"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        placeholder="Mínimo 6 caracteres"
+                        leftIcon={Lock}
+                        errorMessage={errors.password}
                         required
-                        className="pl-11"
+                        minLength={6}
+                        className="pr-9"
                     />
-                    <Mail className="absolute bottom-3 left-4 size-5 text-text-muted"/>
-                </div>
-
-                <div className="space-y-2">
-                    <div className="relative">
-                        <Input
-                            label="Contraseña"
-                            name="password"
-                            type={showPassword ? "text" : "password"}
-                            autoComplete="new-password"
-                            placeholder="Mínimo 6 caracteres"
-                            value={password}
-                            onChange={(event) => setPassword(event.target.value)}
-                            error={errors.password}
-                            required
-                            minLength={6}
-                            className="pl-11 pr-11"
-                        />
-                        <Lock className="absolute bottom-3 left-4 size-5 text-text-muted"/>
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute bottom-3 right-4 text-text-muted hover:text-brand"
-                        >
-                            {showPassword ? <EyeOff size={20}/> : <Eye size={20}/>}
-                        </button>
-                    </div>
-
-                    {password.length > 0 && (
-                        <div className="mt-2 flex items-center gap-2">
-                            <div className="h-1 flex-1 overflow-hidden rounded-full bg-black/10">
-                                <div
-                                    className="h-full rounded-full transition-all duration-300"
-                                    style={{width: strength.width, backgroundColor: strength.color}}
-                                />
-                            </div>
-                            <span className="text-[10px] font-bold" style={{color: strength.color}}>
-                                {strength.label}
-                            </span>
-                        </div>
-                    )}
+                    <button
+                        type="button"
+                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                        onClick={() => setShowPassword((value) => !value)}
+                        className="absolute right-4 bottom-3.5 text-text-muted transition hover:text-brand"
+                    >
+                        {showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}
+                    </button>
                 </div>
 
                 <div className="relative">
@@ -186,65 +149,42 @@ export function SignUpForm() {
                         type={showConfirmPassword ? "text" : "password"}
                         autoComplete="new-password"
                         placeholder="Repite tu contraseña"
-                        error={errors.confirmPassword}
+                        leftIcon={Lock}
+                        errorMessage={errors.confirmPassword}
                         required
                         minLength={6}
-                        className="pl-11 pr-11"
+                        className="pr-9"
                     />
-                    <Lock className="absolute bottom-3 left-4 size-5 text-text-muted"/>
                     <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute bottom-3 right-4 text-text-muted hover:text-brand"
+                        aria-label={showConfirmPassword ? "Ocultar confirmación" : "Mostrar confirmación"}
+                        onClick={() => setShowConfirmPassword((value) => !value)}
+                        className="absolute right-4 bottom-3.5 text-text-muted transition hover:text-brand"
                     >
-                        {showConfirmPassword ? <EyeOff size={20}/> : <Eye size={20}/>}
+                        {showConfirmPassword ? <EyeOff size={16}/> : <Eye size={16}/>}
                     </button>
                 </div>
             </div>
 
-            <div className="space-y-1">
-                <div className="flex items-start gap-3">
-                    <Checkbox
-                        id="privacy"
-                        checked={privacy}
-                        onChange={(event) => setPrivacy(event.target.checked)}
-                        className="mt-0.5"
-                    />
-                    <label htmlFor="privacy" className="text-[13px] leading-snug text-text-muted">
-                        Acepto la <span className="font-semibold text-brand">política de privacidad</span> y los <span
-                        className="font-semibold text-brand">términos de uso</span> de Preyo
-                    </label>
+            {bannerError ? (
+                <div
+                    role="alert"
+                    className="mt-5 rounded-2xl border border-[#FFD6D6] bg-[#FFF0F0] px-4 py-3 text-sm font-medium text-error"
+                >
+                    {bannerError}
                 </div>
-
-                {errors.privacy && (
-                    <p className="pl-8 text-xs text-error">
-                        {errors.privacy}
-                    </p>
-                )}
-            </div>
-
-            {error ? (
-                <p role="alert" className="text-sm font-medium text-error">
-                    {error}
-                </p>
             ) : null}
 
-            {message ? (
-                <p role="status" className="text-sm font-medium text-brand">
-                    {message}
-                </p>
-            ) : null}
-
-            <Button type="submit" fullWidth size="lg" loading={isPending}>
+            <Button type="submit" fullWidth size="lg" loading={isLoading} className="mt-6">
                 Crear cuenta
             </Button>
 
-            <p className="text-center text-sm text-text-muted">
+            <p className="mt-5 text-center text-sm text-text-muted">
                 ¿Ya tienes cuenta?{" "}
                 <Link href="/sign-in" className="font-bold text-brand hover:underline">
                     Iniciar sesión
                 </Link>
             </p>
-        </motion.form>
+        </form>
     );
 }
