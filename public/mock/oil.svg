@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img" aria-label="Aceite">
+  <rect width="160" height="120" fill="#FFF4E8"/>
+  <g transform="translate(54 14)">
+    <rect x="16" y="0" width="20" height="18" rx="4" fill="#217A4B"/>
+    <rect x="8" y="14" width="36" height="88" rx="12" fill="#7AA02A"/>
+    <rect x="13" y="34" width="26" height="38" rx="6" fill="#F6C94C"/>
+    <text x="26" y="58" text-anchor="middle" font-family="Inter,Arial" font-size="12" font-weight="800" fill="#1F2A24">OIL</text>
+  </g>
+</svg>
