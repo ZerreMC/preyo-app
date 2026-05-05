@@ -13,9 +13,7 @@ export function AppShell({children}: AppShellProps) {
                     {children}
                 </main>
 
-                <div className="sticky bottom-0 z-50">
-                    <BottomNav/>
-                </div>
+                <BottomNav/>
             </div>
         </div>
     );
