@@ -6,7 +6,6 @@ import {motion} from "motion/react";
 import {Home, ShoppingCart, Store, User, type LucideIcon} from "lucide-react";
 import {cn} from "@/shared/lib";
 
-// Los iconos son UI, no config — se definen aquí en lugar de en routes.ts
 const NAV_ITEMS: {
     id: string;
     label: string;
@@ -25,18 +24,17 @@ export function BottomNav() {
     return (
         <nav
             aria-label="Navegación principal"
-            className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
+            className="pointer-events-auto fixed inset-x-0 bottom-0 z-70 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
         >
             <motion.div
-                initial={{y: 80, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
+                initial={false}
+                animate={{y: 0}}
                 transition={{
                     type: "spring",
                     stiffness: 300,
                     damping: 30,
-                    delay: 0.1,
                 }}
-                className="pointer-events-auto mx-auto w-full max-w-160 glass-strong rounded-4xl p-1.5"
+                className="pointer-events-auto mx-auto w-full max-w-lg rounded-4xl border border-divider bg-surface p-1.5 shadow-[0_8px_28px_rgba(31,42,36,0.12)]"
             >
                 <ul className="flex items-center">
                     {NAV_ITEMS.map((tab) => {
