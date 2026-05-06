@@ -104,3 +104,13 @@ ssh yisus@100.69.204.118 \
 - `scripts/db/README.md`
 - `supabase/migrations/*.sql`
 - `package.json`
+
+## Aplicar migraciones a producción (Supabase Cloud)
+
+Requiere `SUPABASE_ACCESS_TOKEN` en `.env` y haber ejecutado `supabase login`:
+
+```bash
+pnpm db:migrate:prod
+```
+
+**Flujo recomendado:** primero `pnpm db:migrate:remote` (local), validar, luego `pnpm db:migrate:prod`.
