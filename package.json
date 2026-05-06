@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:migrate:remote": "node scripts/db/apply-migrations.mjs"
+    "db:migrate:remote": "node scripts/db/apply-migrations.mjs",
+    "db:migrate:prod": "supabase db push --project-ref xixrngrajnvfqqopwhun"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
