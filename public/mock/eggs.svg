@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img" aria-label="Huevos">
+  <rect width="160" height="120" fill="#ECF8EE"/>
+  <rect x="25" y="45" width="110" height="45" rx="12" fill="#D9C7A8"/>
+  <g fill="#FFFDF8" stroke="#D7D0C2" stroke-width="2">
+    <ellipse cx="48" cy="48" rx="13" ry="19"/>
+    <ellipse cx="80" cy="44" rx="13" ry="19"/>
+    <ellipse cx="112" cy="48" rx="13" ry="19"/>
+  </g>
+</svg>

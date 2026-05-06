@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Bolsa de compra">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#CFF3DA"/>
+      <stop offset="1" stop-color="#217A4B"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#g)"/>
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" opacity=".45">
+    <path d="M146 114h214l46 178H102l44-178Z" stroke-width="18"/>
+    <path d="M187 126c10-58 42-86 78-86s68 28 78 86" stroke-width="14"/>
+    <path d="M344 115h122l42 177H389" stroke-width="16"/>
+    <path d="M386 126c9-48 34-72 66-72 24 0 44 14 57 42" stroke-width="12"/>
+    <path d="M166 177h193M149 230h224M409 177h82M424 230h82" stroke-width="10" opacity=".55"/>
+  </g>
+</svg>
