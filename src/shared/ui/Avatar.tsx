@@ -1,4 +1,4 @@
-import * as React from "react";
+import type {CSSProperties, HTMLAttributes} from "react";
 import Image from "next/image";
 
 import {cn} from "@/shared/lib";
@@ -9,7 +9,7 @@ const avatarSizes = {
     lg: "size-10 text-[11px]",
 } as const;
 
-export type AvatarProps = React.ComponentProps<"div"> & {
+export type AvatarProps = Omit<HTMLAttributes<HTMLDivElement>, "color"> & {
     src?: string;
     alt?: string;
     initials?: string;
@@ -51,13 +51,24 @@ export type AvatarStackItem = Pick<
     "src" | "alt" | "initials" | "color"
 > & {
     id?: string | number;
+    name?: string;
+    email?: string;
+    role?: string;
 };
 
-export type AvatarStackProps = React.ComponentProps<"div"> & {
+export type AvatarStackProps = HTMLAttributes<HTMLDivElement> & {
     avatars: AvatarStackItem[];
     max?: number;
     size?: keyof typeof avatarSizes;
 };
+
+function getAvatarSortKey(avatar: AvatarStackItem) {
+    return String(avatar.email ?? avatar.name ?? avatar.id ?? avatar.alt ?? avatar.initials ?? avatar.src ?? "");
+}
+
+function getAvatarKey(avatar: AvatarStackItem) {
+    return String(avatar.id ?? avatar.email ?? avatar.name ?? avatar.src ?? avatar.initials ?? "");
+}
 
 function AvatarStack({
                          avatars,
@@ -66,20 +77,28 @@ function AvatarStack({
                          className,
                          ...props
                      }: AvatarStackProps) {
-    const visibleAvatars = avatars.slice(0, max);
-    const overflowCount = Math.max(avatars.length - visibleAvatars.length, 0);
-    const stackCount = visibleAvatars.length + (overflowCount > 0 ? 1 : 0);
+    const sortedAvatars = [...avatars].sort((a, b) => getAvatarSortKey(a).localeCompare(getAvatarSortKey(b)));
+    const visibleAvatars = sortedAvatars.slice(0, max);
+    const overflowCount = Math.max(sortedAvatars.length - visibleAvatars.length, 0);
 
     return (
         <div className={cn("flex -space-x-2", className)} {...props}>
-            {visibleAvatars.map(({id, ...avatar}, index) => (
-                <Avatar
-                    key={id ?? avatar.src ?? avatar.initials ?? index}
-                    {...avatar}
-                    size={size}
-                    style={{zIndex: stackCount - index}}
-                />
-            ))}
+            {visibleAvatars.map((avatar, index) => {
+                const {src, alt, initials, color} = avatar;
+                const stackStyle: CSSProperties = {zIndex: visibleAvatars.length - index};
+
+                return (
+                    <Avatar
+                        key={getAvatarKey(avatar)}
+                        src={src}
+                        alt={alt}
+                        initials={initials}
+                        color={color}
+                        size={size}
+                        style={stackStyle}
+                    />
+                );
+            })}
 
             {overflowCount > 0 ? (
                 <Avatar

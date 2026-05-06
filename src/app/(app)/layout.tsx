@@ -14,7 +14,9 @@ export default async function ProtectedLayout({children}: ProtectedLayoutProps) 
         data: {user},
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    const isMock = process.env.NEXT_PUBLIC_PREYO_DATA_SOURCE === "mock";
+
+    if (!user && !isMock) {
         redirect("/sign-in");
     }
 

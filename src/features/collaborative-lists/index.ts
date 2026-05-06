@@ -1,14 +1,24 @@
-// Shared types for UI
-export type {Uuid, ListStatusValue, ListItem, Snapshot, DomainError} from './domain/ShoppingList';
+export type {Uuid, ListStatusValue, ListItem, Snapshot, DomainError} from "./domain/ShoppingList";
 
-// Ports and Commands (CQRS Write)
-export type {ListRepository} from './model/ports/ListRepository';
-export {AddItemCommandHandler} from './model/commands/AddItemCommandHandler';
-export type {AddItemCommand, AddItemCommandError} from './model/commands/AddItemCommandHandler';
+export type {ListRepository} from "./model/ports/ListRepository";
+export {AddItemCommandHandler} from "./model/commands/AddItemCommandHandler";
+export type {AddItemCommand, AddItemCommandError} from "./model/commands/AddItemCommandHandler";
 
-// Queries and Read Models (CQRS Read)
-export {getCollaborativeList} from './model/queries/getCollaborativeList';
-export type {CollaborativeListReadModel, CollaborativeListItemReadModel} from './model/queries/getCollaborativeList';
+export {getCollaborativeList} from "./model/queries/getCollaborativeList";
+export type {CollaborativeListReadModel, CollaborativeListItemReadModel} from "./model/queries/getCollaborativeList";
 
-// FSD UI Hooks
-export {useCollaborativeList} from './model/hooks/useCollaborativeList';
+/* useCollaborativeList is client-only → import from "@/features/collaborative-lists/client" */
+
+export {
+    AddProductsPageClient,
+    CreateListModal,
+    ListDetailPageClient,
+    ListsPageClient,
+    NewListPageClient,
+    ShareListPageClient,
+    PlanRoutePageClient
+} from "./ui";
+export type {CreateListInput} from "./ui";
+
+export {mockLists, toListSummary} from "./model/mockLists";
+export type {MockList, MockListSummary} from "./model/mockLists";

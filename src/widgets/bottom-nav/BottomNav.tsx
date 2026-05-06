@@ -18,13 +18,25 @@ const NAV_ITEMS: {
     {id: "settings", label: "Perfil", href: "/settings", icon: User},
 ];
 
+/** Routes where the BottomNav is visible (exact match). */
+const MAIN_ROUTES = new Set(["/", "/lists", "/compare", "/settings", "/profile"]);
+
+function shouldShowBottomNav(pathname: string): boolean {
+    if (MAIN_ROUTES.has(pathname)) return true;
+    // Any sub-route of /lists (e.g. /lists/abc, /lists/abc/add) → hide
+    if (pathname.startsWith("/lists/")) return false;
+    return false;
+}
+
 export function BottomNav() {
     const pathname = usePathname();
+
+    if (!shouldShowBottomNav(pathname)) return null;
 
     return (
         <nav
             aria-label="Navegación principal"
-            className="pointer-events-auto fixed inset-x-0 bottom-0 z-70 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
+            className="pointer-events-none fixed inset-x-0 bottom-0 z-70 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
         >
             <motion.div
                 initial={false}
@@ -34,7 +46,7 @@ export function BottomNav() {
                     stiffness: 300,
                     damping: 30,
                 }}
-                className="pointer-events-auto mx-auto w-full max-w-lg rounded-4xl border border-divider bg-surface p-1.5 shadow-[0_8px_28px_rgba(31,42,36,0.12)]"
+                className="pointer-events-auto mx-auto w-full max-w-150 rounded-4xl border border-divider bg-white/90 backdrop-blur-md p-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.08)]"
             >
                 <ul className="flex items-center">
                     {NAV_ITEMS.map((tab) => {
@@ -51,8 +63,7 @@ export function BottomNav() {
                                     href={tab.href}
                                     aria-current={isActive ? "page" : undefined}
                                     className={cn(
-                                        "relative flex min-h-13 flex-col items-center justify-center gap-0.5 rounded-3xl px-1 py-2 text-[10px] tracking-tight transition-colors duration-200",
-                                        "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand focus-visible:ring-offset-2",
+                                        "relative flex min-h-13 flex-col items-center justify-center gap-0.5 rounded-3xl px-1 py-2 text-[10px] tracking-tight transition-colors duration-200 outline-none",
                                         isActive
                                             ? "font-bold text-brand-active"
                                             : "font-normal text-text-muted hover:text-text-primary",
