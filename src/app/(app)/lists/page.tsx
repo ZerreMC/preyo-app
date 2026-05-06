@@ -1,10 +1,5 @@
-export default function ListsPage() {
-    return (
-        <section className="space-y-2">
-            <h1 className="text-2xl font-black">Listas</h1>
-            <p className="text-sm text-text-muted">
-                Placeholder de listas colaborativas.
-            </p>
-        </section>
-    );
+import {ListsPageClient, mockLists, toListSummary} from "@/features/collaborative-lists";
+
+export default function Page() {
+    return <ListsPageClient lists={mockLists.map(toListSummary)}/>;
 }

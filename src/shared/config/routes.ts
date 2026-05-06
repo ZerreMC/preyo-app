@@ -4,7 +4,11 @@ export const routes = {
     signIn: "/sign-in",
     signUp: "/sign-up",
     lists: "/lists",
+    newList: "/lists/new",
     listDetail: (listId: string) => `/lists/${listId}`,
+    addProducts: (listId: string) => `/lists/${listId}/add`,
+    shareList: (listId: string) => `/lists/${listId}/share`,
+    planRoute: (listId: string) => `/lists/${listId}/route`,
     compare: "/compare",
     settings: "/settings",
 } as const;
