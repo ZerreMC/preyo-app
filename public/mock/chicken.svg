@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img" aria-label="Pollo">
+  <rect width="160" height="120" fill="#FFE7D2"/>
+  <g fill="#C06A42">
+    <ellipse cx="48" cy="58" rx="29" ry="15"/>
+    <ellipse cx="94" cy="49" rx="33" ry="16"/>
+    <ellipse cx="107" cy="80" rx="35" ry="16"/>
+  </g>
+  <g fill="none" stroke="#7A3822" stroke-width="4" opacity=".45">
+    <path d="M24 58h111M33 42h91M28 78h108"/>
+  </g>
+</svg>
