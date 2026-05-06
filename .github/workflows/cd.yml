@@ -2,7 +2,7 @@ name: cd
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   docker:
@@ -30,3 +30,6 @@ jobs:
           file: docker/Dockerfile.prod
           push: true
           tags: ghcr.io/${{ env.REPO_LC }}:latest
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
