@@ -50,7 +50,9 @@ export async function proxy(request: NextRequest) {
 
     const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
-    if (!user && isPrivateRoute) {
+    const isMock = process.env.NEXT_PUBLIC_PREYO_DATA_SOURCE === "mock";
+
+    if (!user && isPrivateRoute && !isMock) {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = "/sign-in";
         redirectUrl.searchParams.set("redirectTo", pathname);
