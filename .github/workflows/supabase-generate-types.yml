@@ -13,13 +13,10 @@ jobs:
         with:
           version: latest
 
-      - name: Init Supabase
-        run: supabase init
-
-      - name: Start local stack (Docker)
-        run: supabase db start
-
-      - name: Verify generated types match schema
+      - name: Verify generated types match Supabase schema
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          supabase gen types typescript --local > src/shared/api/supabase/types/database.types.ts
+          mkdir -p src/shared/api/supabase/types
+          supabase gen types typescript --project-id "${{ vars.SUPABASE_PROJECT_REF }}" > src/shared/api/supabase/types/database.types.ts
           git diff --ignore-space-at-eol --exit-code

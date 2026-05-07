@@ -1,6 +1,6 @@
 import {createServerClient, type CookieOptions} from "@supabase/ssr";
 import {NextResponse, type NextRequest} from "next/server";
-import {env} from "@/shared/config/env";
+import {env, isMockDataSource} from "@/shared/config/env";
 
 const privateRoutes = ["/lists", "/compare", "/settings"];
 const authRoutes = ["/sign-in", "/sign-up"];
@@ -9,6 +9,10 @@ export async function proxy(request: NextRequest) {
     let response = NextResponse.next({
         request,
     });
+
+    if (isMockDataSource()) {
+        return response;
+    }
 
     const supabase = createServerClient(env.supabaseUrl, env.supabaseAnonKey, {
         cookies: {
@@ -50,9 +54,7 @@ export async function proxy(request: NextRequest) {
 
     const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
-    const isMock = process.env.NEXT_PUBLIC_PREYO_DATA_SOURCE === "mock";
-
-    if (!user && isPrivateRoute && !isMock) {
+    if (!user && isPrivateRoute) {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = "/sign-in";
         redirectUrl.searchParams.set("redirectTo", pathname);
