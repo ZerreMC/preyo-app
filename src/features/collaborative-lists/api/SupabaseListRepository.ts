@@ -2,97 +2,199 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 
 import {
     ShoppingList,
-    type ListStatusValue,
     type Snapshot,
     type Uuid,
 } from '../domain/ShoppingList';
 import {
     type AddItemParams,
     type ChangeStatusParams,
+    type CollaboratorRole,
+    type CreateListParams,
+    type DeleteListParams,
+    type ListCollaborator,
     type ListRepository,
     type RemoveItemParams,
+    type RenameListParams,
+    type ShoppingListSummary,
     type ToggleItemParams,
     RepositoryError,
     type RepositoryErrorCode,
 } from '../model/ports/ListRepository';
+import type {Database} from '@/shared/api/supabase/types/database.types';
 
-type ShoppingListRow = {
-    id: string;
-    owner_id: string;
-    title: string;
-    status: ListStatusValue;
-    transport_capacity_g: number;
+type PreyoSupabaseClient = SupabaseClient<Database>;
+type ShoppingListRow = Database['public']['Tables']['shopping_lists']['Row'];
+type ShoppingListItemRow = Database['public']['Tables']['shopping_list_items']['Row'];
+type CollaboratorRow = Database['public']['Tables']['shopping_list_collaborators']['Row'];
+
+type ListWithItemsRow = ShoppingListRow & {
+    items: Pick<
+        ShoppingListItemRow,
+        'id' | 'list_id' | 'product_ref' | 'name' | 'quantity' | 'estimated_weight_g' | 'checked'
+    >[];
 };
 
-type ShoppingListItemRow = {
-    id: string;
-    list_id: string;
-    product_ref: string;
-    name: string;
-    quantity: string | null;
-    estimated_weight_g: number;
-    checked: boolean;
+// Profile data joined from profiles table
+type CollaboratorProfile = {
+    display_name: string;
+    avatar_url: string | null;
+} | null;
+
+type CollaboratorWithProfile = Pick<CollaboratorRow, 'user_id' | 'role'> & {
+    profile: CollaboratorProfile;
 };
+
+type ListSummaryRow = Pick<ShoppingListRow, 'id' | 'title' | 'status' | 'updated_at'> & {
+    items: Pick<ShoppingListItemRow, 'id' | 'checked'>[];
+    collaborators: CollaboratorWithProfile[];
+};
+
+const avatarColors = ['#39B86B', '#FF8A3D', '#3347C4', '#8B5CF6', '#C94F45'];
 
 function mapRpcErrorCode(message: string): RepositoryErrorCode {
-    switch (message) {
-        case 'UNAUTHORIZED':
-            return 'UNAUTHORIZED';
-        case 'FORBIDDEN':
-            return 'FORBIDDEN';
-        case 'NOT_FOUND':
-            return 'NOT_FOUND';
-        case 'LIST_LOCKED':
-            return 'LIST_LOCKED';
-        case 'DUPLICATE_PRODUCT':
-            return 'DUPLICATE_PRODUCT';
-        case 'CAPACITY_EXCEEDED':
-            return 'CAPACITY_EXCEEDED';
-        case 'ITEM_NOT_FOUND':
-            return 'ITEM_NOT_FOUND';
-        case 'INVALID_STATUS_TRANSITION':
-            return 'INVALID_STATUS_TRANSITION';
-        default:
-            return 'INVALID_INPUT';
-    }
+    if (message.includes('UNAUTHORIZED')) return 'UNAUTHORIZED';
+    if (message.includes('FORBIDDEN')) return 'FORBIDDEN';
+    if (message.includes('USER_NOT_FOUND')) return 'USER_NOT_FOUND';
+    if (message.includes('INVITE_USED')) return 'INVITE_USED';
+    if (message.includes('INVITE_EXPIRED')) return 'INVITE_EXPIRED';
+    if (message.includes('NOT_FOUND')) return 'NOT_FOUND';
+    if (message.includes('LIST_LOCKED')) return 'LIST_LOCKED';
+    if (message.includes('DUPLICATE_PRODUCT')) return 'DUPLICATE_PRODUCT';
+    if (message.includes('CAPACITY_EXCEEDED')) return 'CAPACITY_EXCEEDED';
+    if (message.includes('ITEM_NOT_FOUND')) return 'ITEM_NOT_FOUND';
+    if (message.includes('INVALID_STATUS_TRANSITION')) return 'INVALID_STATUS_TRANSITION';
+    return 'INVALID_INPUT';
+}
+
+function mapListToSnapshot(listRow: ListWithItemsRow): Snapshot {
+    return {
+        id: listRow.id as Uuid,
+        ownerId: listRow.owner_id as Uuid,
+        title: listRow.title,
+        status: listRow.status,
+        transportCapacityG: listRow.transport_capacity_g,
+        items: (listRow.items ?? []).map((row) => ({
+            id: row.id as Uuid,
+            productRef: row.product_ref,
+            name: row.name,
+            quantity: row.quantity,
+            estimatedWeightG: row.estimated_weight_g,
+            checked: row.checked,
+        })),
+    };
+}
+
+function collaboratorColor(userId: string) {
+    const index = Array.from(userId).reduce((acc, char) => acc + char.charCodeAt(0), 0) % avatarColors.length;
+    return avatarColors[index];
+}
+
+function mapCollaborator(row: CollaboratorWithProfile): ListCollaborator {
+    const displayName = row.profile?.display_name?.trim() || null;
+    const initials = displayName
+        ? displayName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+        : row.user_id.slice(0, 2).toUpperCase();
+
+    return {
+        id: row.user_id as Uuid,
+        role: row.role as CollaboratorRole,
+        name: displayName ?? `Usuario ${row.user_id.slice(0, 8)}`,
+        initials,
+        color: collaboratorColor(row.user_id),
+    };
 }
 
 export class SupabaseListRepository implements ListRepository {
-    constructor(private readonly supabase: SupabaseClient) {
+    constructor(private readonly supabase: PreyoSupabaseClient) {
+    }
+
+    async getList(listId: Uuid): Promise<ShoppingList | null> {
+        return this.getByIdForWrite(listId);
+    }
+
+    async getLists(): Promise<ShoppingListSummary[]> {
+        const {data, error} = await this.supabase
+            .from('shopping_lists')
+            .select(`
+                id, title, status, updated_at,
+                items:shopping_list_items(id, checked),
+                collaborators:shopping_list_collaborators(
+                    user_id,
+                    role,
+                    profile:profiles(display_name, avatar_url)
+                )
+            `)
+            .order('updated_at', {ascending: false})
+            .returns<ListSummaryRow[]>();
+
+        if (error) {
+            throw new RepositoryError('INVALID_INPUT', error.message);
+        }
+
+        return (data ?? []).map((row) => ({
+            id: row.id as Uuid,
+            title: row.title,
+            status: row.status,
+            itemCount: row.items.length,
+            checkedCount: row.items.filter((item) => item.checked).length,
+            collaborators: row.collaborators.map(mapCollaborator),
+            updatedAt: row.updated_at,
+        }));
     }
 
     async getByIdForWrite(listId: Uuid): Promise<ShoppingList | null> {
         const {data: listRow, error: listError} = await this.supabase
             .from('shopping_lists')
-            .select('id, owner_id, title, status, transport_capacity_g, items:shopping_list_items(id, list_id, product_ref, name, quantity, estimated_weight_g, checked)')
+            .select(`
+                id, owner_id, title, status, transport_capacity_g, last_command_id, last_command_at, created_at, updated_at,
+                items:shopping_list_items(id, list_id, product_ref, name, quantity, estimated_weight_g, checked)
+            `)
             .eq('id', listId)
-            .maybeSingle<ShoppingListRow & { items: ShoppingListItemRow[] }>();
+            .returns<ListWithItemsRow[]>()
+            .maybeSingle();
 
         if (listError) {
             throw new RepositoryError('INVALID_INPUT', listError.message);
         }
 
-        if (!listRow) {
-            return null;
-        }
+        if (!listRow) return null;
 
-        const snapshot: Snapshot = {
-            id: listRow.id as Uuid,
-            ownerId: listRow.owner_id as Uuid,
-            title: listRow.title,
-            status: listRow.status,
-            transportCapacityG: listRow.transport_capacity_g,
-            items: (listRow.items ?? []).map((row: ShoppingListItemRow) => ({
-                id: row.id as Uuid,
-                productRef: row.product_ref,
-                name: row.name,
-                quantity: row.quantity,
-                estimatedWeightG: row.estimated_weight_g,
-                checked: row.checked,
-            })),
-        };
+        return ShoppingList.hydrate(mapListToSnapshot(listRow));
+    }
 
-        return ShoppingList.hydrate(snapshot);
+    async createList(params: CreateListParams): Promise<ShoppingList> {
+        const {error} = await this.supabase.rpc('cl_create_list', {
+            p_command_id: params.commandId,
+            p_list_id: params.listId,
+            p_title: params.title,
+            p_transport_capacity_g: params.transportCapacityG,
+        });
+
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
+
+        const list = await this.getList(params.listId);
+        if (!list) throw new RepositoryError('NOT_FOUND');
+
+        return list;
+    }
+
+    async renameList(params: RenameListParams): Promise<void> {
+        const {error} = await this.supabase.rpc('cl_rename_list', {
+            p_command_id: params.commandId,
+            p_list_id: params.listId,
+            p_title: params.title,
+        });
+
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
+    }
+
+    async deleteList(params: DeleteListParams): Promise<void> {
+        const {error} = await this.supabase.rpc('cl_delete_list', {
+            p_command_id: params.commandId,
+            p_list_id: params.listId,
+        });
+
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
     }
 
     async addItem(params: AddItemParams): Promise<void> {
@@ -102,13 +204,11 @@ export class SupabaseListRepository implements ListRepository {
             p_item_id: params.itemId,
             p_product_ref: params.productRef,
             p_name: params.name,
-            p_quantity: params.quantity,
+            p_quantity: params.quantity ?? '',
             p_estimated_weight_g: params.estimatedWeightG,
         });
 
-        if (error) {
-            throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
-        }
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
     }
 
     async removeItem(params: RemoveItemParams): Promise<void> {
@@ -118,9 +218,7 @@ export class SupabaseListRepository implements ListRepository {
             p_item_id: params.itemId,
         });
 
-        if (error) {
-            throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
-        }
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
     }
 
     async toggleItem(params: ToggleItemParams): Promise<void> {
@@ -131,9 +229,7 @@ export class SupabaseListRepository implements ListRepository {
             p_checked: params.checked,
         });
 
-        if (error) {
-            throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
-        }
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
     }
 
     async changeStatus(params: ChangeStatusParams): Promise<void> {
@@ -143,8 +239,66 @@ export class SupabaseListRepository implements ListRepository {
             p_next_status: params.nextStatus,
         });
 
-        if (error) {
-            throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
-        }
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
+    }
+
+    async getCollaborators(listId: Uuid): Promise<ListCollaborator[]> {
+        const {data, error} = await this.supabase
+            .from('shopping_list_collaborators')
+            .select(`
+                user_id,
+                role,
+                profile:profiles(display_name, avatar_url)
+            `)
+            .eq('list_id', listId)
+            .returns<CollaboratorWithProfile[]>();
+
+        if (error) throw new RepositoryError('INVALID_INPUT', error.message);
+
+        return (data ?? []).map(mapCollaborator);
+    }
+
+    async addCollaboratorByEmail(
+        listId: Uuid,
+        email: string,
+        role: Exclude<CollaboratorRole, 'OWNER'>,
+    ): Promise<void> {
+        const {error} = await this.supabase.rpc('cl_add_collaborator_by_email', {
+            p_list_id: listId,
+            p_email: email,
+            p_role: role,
+        });
+
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
+    }
+
+    async removeCollaborator(listId: Uuid, userId: Uuid): Promise<void> {
+        const {error} = await this.supabase.rpc('cl_remove_collaborator', {
+            p_list_id: listId,
+            p_target_user_id: userId,
+        });
+
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
+    }
+
+    async generateInviteToken(listId: Uuid, role: Exclude<CollaboratorRole, 'OWNER'> = 'EDITOR'): Promise<string> {
+        const {data, error} = await this.supabase.rpc('cl_generate_invite_token', {
+            p_list_id: listId,
+            p_role: role,
+        });
+
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
+
+        return data;
+    }
+
+    async acceptInvite(token: Uuid): Promise<Uuid> {
+        const {data, error} = await this.supabase.rpc('cl_accept_invite', {
+            p_token: token,
+        });
+
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
+
+        return data as Uuid;
     }
 }

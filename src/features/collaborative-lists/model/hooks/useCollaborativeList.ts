@@ -1,3 +1,5 @@
+"use client";
+
 import {useEffect, useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 
@@ -5,10 +7,11 @@ import type {Uuid} from '../../domain/ShoppingList';
 import {
     getCollaborativeList,
     type CollaborativeListReadModel,
-} from '../queries/getCollaborativeList';
+} from '@/features/collaborative-lists';
+import type {Database} from '@/shared/api/supabase/types/database.types';
 
 type UseCollaborativeListParams = {
-    supabase: SupabaseClient;
+    supabase: SupabaseClient<Database>;
     listId: Uuid | null;
 };
 
@@ -22,7 +25,6 @@ export function useCollaborativeList({
                                          supabase,
                                          listId,
                                      }: UseCollaborativeListParams): UseCollaborativeListState {
-    // Avoid isLoading:true flash when listId is null on first render
     const [state, setState] = useState<UseCollaborativeListState>(() => ({
         list: null,
         isLoading: listId !== null,
@@ -36,16 +38,20 @@ export function useCollaborativeList({
         }
 
         let isMounted = true;
+        let fetchSeq = 0;
         let channel: ReturnType<SupabaseClient['channel']> | null = null;
 
         const fetchList = async () => {
+            const mySeq = ++fetchSeq;
             setState((prev: UseCollaborativeListState) => ({...prev, isLoading: true, error: null}));
 
             try {
                 const list = await getCollaborativeList(supabase, listId);
-                if (isMounted) setState({list, isLoading: false, error: null});
+                if (isMounted && mySeq === fetchSeq) {
+                    setState({list, isLoading: false, error: null});
+                }
             } catch (err) {
-                if (isMounted) {
+                if (isMounted && mySeq === fetchSeq) {
                     setState((prev: UseCollaborativeListState) => ({
                         ...prev,
                         isLoading: false,
@@ -56,15 +62,12 @@ export function useCollaborativeList({
         };
 
         const setup = async () => {
-            // 1. Authenticate the realtime connection
             const {data} = await supabase.auth.getSession();
             if (!isMounted) return;
 
             await supabase.realtime.setAuth(data.session?.access_token ?? null);
             if (!isMounted) return;
 
-            // 2. Subscribe before fetching so we never miss a broadcast that arrives
-            //    between the fetch completing and the channel becoming active
             channel = supabase
                 .channel(`list:${listId}`, {config: {private: true}})
                 .on('broadcast', {event: 'INSERT'}, () => {
@@ -87,7 +90,6 @@ export function useCollaborativeList({
 
             if (!isMounted) return;
 
-            // 3. Initial fetch after the channel is ready
             await fetchList();
         };
 

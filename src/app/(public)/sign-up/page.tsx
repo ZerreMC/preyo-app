@@ -1,18 +1,37 @@
 import {redirect} from "next/navigation";
 import {SignUpForm} from "@/features/auth";
-import type {SignUpInput} from "@/features/auth";
+import type {SignUpInput, SignUpResult} from "@/features/auth";
 import {createClient} from "@/shared/api/supabase/serverClient";
 
-export default function SignUpPage() {
-    async function handleSignUp(input: SignUpInput): Promise<string | null> {
+type SignUpPageProps = {
+    searchParams?: Promise<{
+        redirectTo?: string;
+        redirect?: string;
+    }>;
+};
+
+function safeRedirectPath(value: string | undefined) {
+    if (!value || !value.startsWith("/") || value.startsWith("//")) {
+        return "/lists";
+    }
+
+    return value;
+}
+
+export default async function SignUpPage({searchParams}: SignUpPageProps) {
+    const params = await searchParams;
+    const redirectTo = safeRedirectPath(params?.redirectTo ?? params?.redirect);
+
+    async function handleSignUp(input: SignUpInput): Promise<SignUpResult> {
         "use server";
 
         const supabase = await createClient();
 
-        const {error} = await supabase.auth.signUp({
+        const {data, error} = await supabase.auth.signUp({
             email: input.email,
             password: input.password,
             options: {
+                emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback`,
                 data: {
                     display_name: input.displayName,
                 },
@@ -20,12 +39,14 @@ export default function SignUpPage() {
         });
 
         if (error) {
-            return error.message || "Ocurrió un error al registrar la cuenta.";
+            return {error: error.message || "Ocurrió un error al registrar la cuenta."};
         }
 
-        // According to SSR auth, successful sign up signs in the user directly or sends an email. 
-        // We'll redirect to the home page if it succeeds.
-        redirect("/");
+        if (!data.session) {
+            return {message: "Cuenta creada. Revisa tu correo para confirmar el registro."};
+        }
+
+        redirect(redirectTo);
     }
 
     return (

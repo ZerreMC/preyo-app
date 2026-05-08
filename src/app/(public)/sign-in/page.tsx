@@ -2,11 +2,29 @@ import {redirect} from "next/navigation";
 import {SignInForm, type SignInInput} from "@/features/auth";
 import {createClient} from "@/shared/api/supabase/serverClient";
 
-export default function SignInPage() {
+type SignInPageProps = {
+    searchParams?: Promise<{
+        redirectTo?: string;
+        redirect?: string;
+    }>;
+};
+
+function safeRedirectPath(value: string | undefined) {
+    if (!value || !value.startsWith("/") || value.startsWith("//")) {
+        return "/";
+    }
+
+    return value;
+}
+
+export default async function SignInPage({searchParams}: SignInPageProps) {
+    const params = await searchParams;
+    const redirectTo = safeRedirectPath(params?.redirectTo ?? params?.redirect);
+
     async function handleSignIn(input: SignInInput): Promise<string | null> {
         "use server";
 
-        const supabase = await createClient(); // si createClient NO es async, quita el await
+        const supabase = await createClient();
 
         const {error} = await supabase.auth.signInWithPassword({
             email: input.email,
@@ -15,7 +33,7 @@ export default function SignInPage() {
 
         if (error) return "Correo o contraseña incorrectos.";
 
-        redirect("/");
+        redirect(redirectTo);
     }
 
     return (

@@ -13,6 +13,11 @@ export type SignUpInput = {
     password: string;
 };
 
+export type SignUpResult = {
+    error?: string;
+    message?: string;
+} | null;
+
 type FormErrors = {
     displayName?: string;
     email?: string;
@@ -22,13 +27,14 @@ type FormErrors = {
 };
 
 type SignUpFormProps = {
-    onSignUp: (input: SignUpInput) => Promise<string | null> | string | null;
+    onSignUp: (input: SignUpInput) => Promise<SignUpResult> | SignUpResult;
     isLoading?: boolean;
     error?: string | null;
 };
 
 export function SignUpForm({onSignUp, isLoading = false, error}: SignUpFormProps) {
     const [errors, setErrors] = useState<FormErrors>({});
+    const [message, setMessage] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -66,9 +72,15 @@ export function SignUpForm({onSignUp, isLoading = false, error}: SignUpFormProps
             return;
         }
 
-        const serverError = await onSignUp({displayName, email, password});
-        if (serverError) {
-            setErrors({form: serverError});
+        setMessage(null);
+        const result = await onSignUp({displayName, email, password});
+        if (result?.error) {
+            setErrors({form: result.error});
+            return;
+        }
+
+        if (result?.message) {
+            setMessage(result.message);
         }
     };
 
@@ -172,6 +184,15 @@ export function SignUpForm({onSignUp, isLoading = false, error}: SignUpFormProps
                     className="mt-5 rounded-2xl border border-[#FFD6D6] bg-[#FFF0F0] px-4 py-3 text-sm font-medium text-error"
                 >
                     {bannerError}
+                </div>
+            ) : null}
+
+            {message ? (
+                <div
+                    role="status"
+                    className="mt-5 rounded-2xl border border-[#CFF3DA] bg-[#ECF8EE] px-4 py-3 text-sm font-medium text-brand-active"
+                >
+                    {message}
                 </div>
             ) : null}
 

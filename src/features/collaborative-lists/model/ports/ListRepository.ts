@@ -4,6 +4,9 @@ export type RepositoryErrorCode =
     | 'UNAUTHORIZED'
     | 'FORBIDDEN'
     | 'NOT_FOUND'
+    | 'USER_NOT_FOUND'
+    | 'INVITE_USED'
+    | 'INVITE_EXPIRED'
     | 'LIST_LOCKED'
     | 'DUPLICATE_PRODUCT'
     | 'CAPACITY_EXCEEDED'
@@ -50,8 +53,57 @@ export type ChangeStatusParams = {
     nextStatus: ListStatusValue;
 };
 
+export type CreateListParams = {
+    commandId: Uuid;
+    listId: Uuid;
+    title: string;
+    transportCapacityG: number;
+};
+
+export type RenameListParams = {
+    commandId: Uuid;
+    listId: Uuid;
+    title: string;
+};
+
+export type DeleteListParams = {
+    commandId: Uuid;
+    listId: Uuid;
+};
+
+export type CollaboratorRole = 'OWNER' | 'EDITOR' | 'VIEWER';
+
+export type ListCollaborator = {
+    id: Uuid;
+    role: CollaboratorRole;
+    name: string;
+    email?: string;
+    initials: string;
+    color: string;
+};
+
+export type ShoppingListSummary = {
+    id: Uuid;
+    title: string;
+    status: ListStatusValue;
+    itemCount: number;
+    checkedCount: number;
+    collaborators: ListCollaborator[];
+    updatedAt: string;
+};
+
 export interface ListRepository {
+    getList(listId: Uuid): Promise<ShoppingList | null>;
+
+    getLists(): Promise<ShoppingListSummary[]>;
+
     getByIdForWrite(listId: Uuid): Promise<ShoppingList | null>;
+
+    createList(params: CreateListParams): Promise<ShoppingList>;
+
+    renameList(params: RenameListParams): Promise<void>;
+
+    deleteList(params: DeleteListParams): Promise<void>;
 
     addItem(params: AddItemParams): Promise<void>;
 
@@ -60,4 +112,14 @@ export interface ListRepository {
     toggleItem(params: ToggleItemParams): Promise<void>;
 
     changeStatus(params: ChangeStatusParams): Promise<void>;
+
+    getCollaborators(listId: Uuid): Promise<ListCollaborator[]>;
+
+    addCollaboratorByEmail(listId: Uuid, email: string, role: Exclude<CollaboratorRole, 'OWNER'>): Promise<void>;
+
+    removeCollaborator(listId: Uuid, userId: Uuid): Promise<void>;
+
+    generateInviteToken(listId: Uuid, role?: Exclude<CollaboratorRole, 'OWNER'>): Promise<string>;
+
+    acceptInvite(token: Uuid): Promise<Uuid>;
 }
