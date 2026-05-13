@@ -10,10 +10,14 @@ type RecentListStatus = "en-compra" | "borrador" | "plantilla" | "compartida" | 
 
 function mapListStatus(status: ListStatus): RecentListStatus {
     switch (status) {
-        case "shopping": return "en-compra";
-        case "completed": return "completada";
-        case "archived": return "completada";
-        default: return "borrador";
+        case "shopping":
+            return "en-compra";
+        case "completed":
+            return "completada";
+        case "archived":
+            return "completada";
+        default:
+            return "borrador";
     }
 }
 
@@ -112,11 +116,18 @@ export default async function HomePage() {
         emoji: "🛒" as const,
     }));
 
+    const formattedDate = new Date().toLocaleDateString("es-ES", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+    });
+
     return (
-        <div className="-mx-4 -mt-2">
+        <div className="-mx-4 -mt-2 lg:mx-0 lg:mt-0">
             <HomeScreen
                 greeting={getGreeting()}
                 displayName={displayName}
+                formattedDate={formattedDate}
                 activeList={activeListProps}
                 recentLists={recentLists}
                 quickActions={{

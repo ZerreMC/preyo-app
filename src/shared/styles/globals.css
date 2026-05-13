@@ -31,6 +31,34 @@
 
     /* Font */
     --font-sans: --font-inter, system-ui, sans-serif;
+
+    /* ── Semantic tokens by usage ──────────────────────────────────────── */
+    /* Status badges on list cards / home screen */
+    --color-status-template-text: #A05A2C;
+    --color-status-shared-bg: #EDF0FF;
+    --color-status-shared-text: #4557DB;
+
+    /* Feedback alert surfaces (error / success banners & inline notices) */
+    --color-feedback-error-bg: #FFF0F0;
+    --color-feedback-error-border: #FFD6D6;
+    --color-feedback-success-bg: #ECF8EE;
+    --color-feedback-success-border: #CFF3DA;
+
+    /* UI chrome — interactive surfaces */
+    --color-bg-hover: #F5F3EE;
+    --color-nav-secondary: #3C3C43;
+
+    /* HomeScreen feature accents */
+    --color-recommendation-text: #8B6914;
+    --color-quick-action-secondary: #B8520A;
+
+    /* StatCard — "Bajadas de precio" variant (info/compare accent) */
+    --color-stat-price-drop: #2196F3;
+    --color-stat-price-drop-bg: #E3F2FD;
+    --color-stat-price-drop-border: #BBDEFB;
+
+    /* StatCard — neutral icon background */
+    --color-icon-bg-neutral: #F5F5F5;
 }
 
 body {
@@ -38,7 +66,7 @@ body {
     min-height: 100dvh;
     background: radial-gradient(
             circle at top left,
-            rgba(57, 184, 107, 0.12),
+            rgb(from var(--color-brand) r g b / 12%),
             transparent 32rem
     ),
     var(--color-bg-main);
@@ -65,4 +93,8 @@ button {
 a {
     color: inherit;
     text-decoration: none;
+}
+
+.bg-brand-gradient {
+    background: linear-gradient(135deg, #7EC87A, var(--color-brand));
 }

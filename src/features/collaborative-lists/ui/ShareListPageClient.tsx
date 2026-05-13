@@ -136,7 +136,7 @@ export function ShareListPageClient({listId}: ShareListPageClientProps) {
                     <button
                         type="button"
                         onClick={() => router.push(routes.listDetail(listId))}
-                        className="grid size-9 shrink-0 place-items-center rounded-xl bg-[rgba(57,184,107,0.12)] text-brand-active"
+                        className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand-active"
                         aria-label="Volver al detalle"
                     >
                         <ArrowLeft size={18}/>
@@ -171,7 +171,7 @@ export function ShareListPageClient({listId}: ShareListPageClientProps) {
                                     onClick={() => setRole(option.id)}
                                     className={[
                                         "flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition",
-                                        active ? "border-brand bg-[rgba(57,184,107,0.12)]" : "border-divider bg-bg-main",
+                                        active ? "border-brand bg-brand/12" : "border-divider bg-bg-main",
                                     ].join(" ")}
                                 >
                                     <span>
@@ -208,13 +208,13 @@ export function ShareListPageClient({listId}: ShareListPageClientProps) {
                 </button>
 
                 {error ? (
-                    <p className="mb-4 rounded-2xl border border-[#FFD6D6] bg-[#FFF0F0] px-4 py-3 text-sm font-medium text-error">
+                    <p className="mb-4 rounded-2xl border border-feedback-error-border bg-feedback-error-bg px-4 py-3 text-sm font-medium text-error">
                         {error}
                     </p>
                 ) : null}
 
                 {message ? (
-                    <p className="mb-4 rounded-2xl border border-[#CFF3DA] bg-[#ECF8EE] px-4 py-3 text-sm font-medium text-brand-active">
+                    <p className="mb-4 rounded-2xl border border-feedback-success-border bg-feedback-success-bg px-4 py-3 text-sm font-medium text-brand-active">
                         {message}
                     </p>
                 ) : null}
@@ -237,7 +237,7 @@ export function ShareListPageClient({listId}: ShareListPageClientProps) {
                                         <button
                                             type="button"
                                             onClick={() => handleRemove(member)}
-                                            className="grid size-8 place-items-center rounded-full bg-[#FFF0F0] text-error"
+                                            className="grid size-8 place-items-center rounded-full bg-feedback-error-bg text-error"
                                             aria-label={`Quitar ${member.name}`}
                                         >
                                             <X size={13}/>

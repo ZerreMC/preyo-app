@@ -1,15 +1,19 @@
 "use client";
 
-import Image from "next/image";
 import type {ReactNode} from "react";
+import {useMemo, useState} from "react";
 import {usePathname} from "next/navigation";
 import {BottomNav} from "@/widgets/bottom-nav/BottomNav";
+import Sidebar from "./Sidebar";
+import {TopBar} from "./TopBar";
+import {LayoutContext} from "./LayoutContext";
 
 interface AppShellProps {
     children: ReactNode;
+    displayName?: string;
+    initials?: string;
 }
 
-/** Routes where BottomNav is rendered — must mirror BottomNav's own logic. */
 const MAIN_ROUTES = new Set(["/", "/lists", "/compare", "/settings", "/profile"]);
 
 function hasBottomNav(pathname: string): boolean {
@@ -18,38 +22,89 @@ function hasBottomNav(pathname: string): boolean {
     return false;
 }
 
-export function AppShell({children}: AppShellProps) {
+export function AppShell({children, displayName, initials}: AppShellProps) {
     const pathname = usePathname();
     const showNav = hasBottomNav(pathname);
+    const hasIntelligencePanel = pathname === "/";
+
+    const [sidebarVisible, setSidebarVisible] = useState(true);
+    const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
+    const [intelligenceVisible, setIntelligenceVisible] = useState(true);
+    const [intelligenceMobileOpen, setIntelligenceMobileOpen] = useState(false);
+
+    const layout = useMemo(
+        () => ({
+            sidebarVisible,
+            setSidebarVisible,
+            toggleSidebar: () => setSidebarVisible((value) => !value),
+
+            sidebarMobileOpen,
+            openSidebarMobile: () => setSidebarMobileOpen(true),
+            closeSidebarMobile: () => setSidebarMobileOpen(false),
+            toggleSidebarMobile: () => setSidebarMobileOpen((value) => !value),
+
+            intelligenceVisible,
+            setIntelligenceVisible,
+            toggleIntelligence: () => setIntelligenceVisible((value) => !value),
+
+            intelligenceMobileOpen,
+            openIntelligenceMobile: () => setIntelligenceMobileOpen(true),
+            closeIntelligenceMobile: () => setIntelligenceMobileOpen(false),
+            toggleIntelligenceMobile: () => setIntelligenceMobileOpen((value) => !value),
+        }),
+        [sidebarVisible, sidebarMobileOpen, intelligenceVisible, intelligenceMobileOpen],
+    );
 
     return (
-        <div className="min-h-dvh bg-[linear-gradient(135deg,#ECF8EE_0%,#FFF4E8_50%,#ECF8EE_100%)] text-text-primary">
-            <div className="mx-auto flex min-h-dvh w-full max-w-7xl flex-col">
-                <header className="flex items-center px-4 sm:px-6 md:px-8 h-12 shrink-0">
-                    <Image
-                        src="/brand/preyo-logo-horizontal.svg"
-                        alt="Preyo"
-                        width={96}
-                        height={24}
-                        className="hidden sm:block h-6 w-auto"
-                        priority
-                    />
-                    <Image
-                        src="/brand/preyo-icon.svg"
-                        alt="Preyo"
-                        width={28}
-                        height={28}
-                        className="block sm:hidden h-7 w-auto"
-                        priority
-                    />
-                </header>
+        <LayoutContext.Provider value={layout}>
+            <div className="min-h-dvh text-text-primary bg-bg-main lg:h-screen lg:overflow-hidden lg:flex lg:flex-row">
+                {/* Sidebar desktop */}
+                {sidebarVisible ? (
+                    <aside className="hidden lg:flex shrink-0">
+                        <Sidebar displayName={displayName} initials={initials}/>
+                    </aside>
+                ) : null}
 
-                <main className={`flex-1 px-4 sm:px-6 md:px-8 pt-2 ${showNav ? "pb-24" : "pb-0"}`}>
-                    {children}
-                </main>
+                {/* Sidebar mobile drawer */}
+                {sidebarMobileOpen ? (
+                    <div className="fixed inset-0 z-50 lg:hidden">
+                        <button
+                            type="button"
+                            className="absolute inset-0 bg-text-primary/45"
+                            aria-label="Cerrar menú"
+                            onClick={layout.toggleSidebarMobile}
+                        />
 
-                <BottomNav/>
+                        <aside className="relative h-full w-72 max-w-[82vw] bg-white shadow-xl">
+                            <Sidebar displayName={displayName} initials={initials}/>
+                        </aside>
+                    </div>
+                ) : null}
+
+                {/* Main column */}
+                <div className="flex min-w-0 flex-1 flex-col lg:overflow-hidden">
+                    {/* TopBar siempre visible */}
+                    <div className="shrink-0 w-full">
+                        <TopBar displayName={displayName} initials={initials} hasIntelligencePanel={hasIntelligencePanel}/>
+                    </div>
+
+                    <main
+                        className={[
+                            "flex-1 min-w-0 lg:overflow-y-auto",
+                            "px-4 sm:px-6 md:px-8 lg:px-0",
+                            showNav ? "pb-24 lg:pb-0" : "pb-0",
+                        ].join(" ")}
+                    >
+                        {children}
+                    </main>
+
+                    {showNav ? (
+                        <div className="lg:hidden">
+                            <BottomNav/>
+                        </div>
+                    ) : null}
+                </div>
             </div>
-        </div>
+        </LayoutContext.Provider>
     );
 }

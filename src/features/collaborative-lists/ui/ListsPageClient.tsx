@@ -183,7 +183,7 @@ export function ListsPageClient({lists}: ListsPageClientProps) {
             <AnimatePresence>
                 {isCreateOpen ? (
                     <motion.div
-                        className="fixed inset-0 z-80 flex flex-col justify-end bg-[rgba(31,42,36,0.45)] backdrop-blur-[8px]"
+                        className="fixed inset-0 z-80 flex flex-col justify-end bg-text-primary/45 backdrop-blur-[8px]"
                         initial={{opacity: 0}}
                         animate={{opacity: 1}}
                         exit={{opacity: 0}}
@@ -222,7 +222,7 @@ export function ListsPageClient({lists}: ListsPageClientProps) {
                                     <button
                                         type="button"
                                         onClick={closeCreateSheet}
-                                        className="grid size-9 place-items-center rounded-xl bg-[rgba(57,184,107,0.14)] text-text-muted"
+                                        className="grid size-9 place-items-center rounded-xl bg-brand/14 text-text-muted"
                                         aria-label="Cerrar"
                                     >
                                         <X size={17}/>
@@ -235,7 +235,7 @@ export function ListsPageClient({lists}: ListsPageClientProps) {
                                         Nombre de la lista
                                     </label>
                                     <div
-                                        className="flex items-center gap-3 rounded-2xl border-[1.5px] border-divider bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] focus-within:border-brand focus-within:ring-[3px] focus-within:ring-[rgba(57,184,107,0.1)]">
+                                        className="flex items-center gap-3 rounded-2xl border-[1.5px] border-divider bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] focus-within:border-brand focus-within:ring-[3px] focus-within:ring-brand/10">
                                         <span className="text-xl">{selectedCategory.emoji}</span>
                                         <input
                                             autoFocus
@@ -269,7 +269,7 @@ export function ListsPageClient({lists}: ListsPageClientProps) {
                                                     className={[
                                                         "flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-2xl border-[1.5px] p-2.5 transition-all",
                                                         active
-                                                            ? "border-brand bg-[rgba(57,184,107,0.14)] shadow-[0_4px_12px_rgba(57,184,107,0.15)]"
+                                                            ? "border-brand bg-brand/14 shadow-[0_4px_12px_rgba(57,184,107,0.15)]"
                                                             : "border-divider bg-white",
                                                     ].join(" ")}
                                                 >

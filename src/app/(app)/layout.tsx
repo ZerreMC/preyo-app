@@ -23,5 +23,19 @@ export default async function ProtectedLayout({children}: ProtectedLayoutProps) 
         redirect("/sign-in");
     }
 
-    return <AppShell>{children}</AppShell>;
+    const {data: profile} = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user.id)
+        .single();
+
+    const displayName =
+        profile?.display_name ?? user.email?.split("@")[0] ?? "Usuario";
+    const initials = displayName.slice(0, 2).toUpperCase();
+
+    return (
+        <AppShell displayName={displayName} initials={initials}>
+            {children}
+        </AppShell>
+    );
 }

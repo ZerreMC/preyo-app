@@ -81,7 +81,7 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
                 <Button variant="secondary" onClick={() => router.push(routes.lists)}>
                     Volver a listas
                 </Button>
-                <p className="mt-4 rounded-3xl border border-[#FFD6D6] bg-[#FFF0F0] p-5 text-sm font-medium text-error">
+                <p className="mt-4 rounded-3xl border border-feedback-error-border bg-feedback-error-bg p-5 text-sm font-medium text-error">
                     {error ?? "No se encontró la lista."}
                 </p>
             </div>
@@ -171,14 +171,14 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
                     <button
                         type="button"
                         onClick={() => router.push(routes.lists)}
-                        className="grid size-9 place-items-center rounded-xl bg-[#ECF8EE] text-brand-active"
+                        className="grid size-9 place-items-center rounded-xl bg-feedback-success-bg text-brand-active"
                         aria-label="Volver a listas"
                     >
                         <ArrowLeft size={17}/>
                     </button>
                     <Link
                         href={routes.shareList(list.id)}
-                        className="grid size-9 place-items-center rounded-xl bg-[#ECF8EE] text-brand-active"
+                        className="grid size-9 place-items-center rounded-xl bg-feedback-success-bg text-brand-active"
                         aria-label="Compartir lista"
                     >
                         <Share2 size={15}/>
@@ -194,7 +194,7 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
                             {statusLabels[list.status]} · {stats.checked} de {stats.total} productos
                         </p>
                     </div>
-                    <span className="rounded-full bg-[#ECF8EE] px-3 py-1 text-[12px] font-bold text-brand-active">
+                    <span className="rounded-full bg-feedback-success-bg px-3 py-1 text-xs font-bold text-brand-active">
                         {stats.pct}%
                     </span>
                 </div>
@@ -203,7 +203,7 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
 
                 {!listCanEdit ? (
                     <div
-                        className="mt-3 rounded-2xl border border-[#FFD6D6] bg-[#FFF0F0] px-3 py-2 text-[12px] font-semibold text-error">
+                        className="mt-3 rounded-2xl border border-feedback-error-border bg-feedback-error-bg px-3 py-2 text-xs font-semibold text-error">
                         Lista en modo lectura. La edición de productos está desactivada.
                     </div>
                 ) : null}
@@ -234,7 +234,7 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
                         />
                     </div>
                     {formError ? (
-                        <p className="mt-3 rounded-2xl border border-[#FFD6D6] bg-[#FFF0F0] px-3 py-2 text-[12px] font-semibold text-error">
+                        <p className="mt-3 rounded-2xl border border-feedback-error-border bg-feedback-error-bg px-3 py-2 text-xs font-semibold text-error">
                             {formError}
                         </p>
                     ) : null}
@@ -320,7 +320,7 @@ function ItemSection({
                                 type="button"
                                 disabled={!canDelete}
                                 onClick={() => onDelete(item)}
-                                className="grid size-9 place-items-center rounded-xl bg-[#FFF0F0] text-error disabled:cursor-not-allowed disabled:opacity-40"
+                                className="grid size-9 place-items-center rounded-xl bg-feedback-error-bg text-error disabled:cursor-not-allowed disabled:opacity-40"
                                 aria-label={`Eliminar ${item.name}`}
                             >
                                 <Trash2 size={15}/>
