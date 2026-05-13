@@ -37,7 +37,14 @@ export function NewListPageClient() {
                 });
 
                 if (!result.ok) {
-                    setError("No se pudo crear la lista.");
+                    console.error('[CreateList] error:', result.error);
+                    setError(
+                        result.error.kind === 'UNAUTHORIZED'
+                            ? 'Sesión expirada. Recarga la página.'
+                            : result.error.kind === 'INVALID_INPUT' && result.error.message
+                                ? result.error.message
+                                : 'No se pudo crear la lista.'
+                    );
                     return;
                 }
 
