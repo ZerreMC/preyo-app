@@ -12,7 +12,7 @@ type SignUpPageProps = {
 
 function safeRedirectPath(value: string | undefined) {
     if (!value || !value.startsWith("/") || value.startsWith("//")) {
-        return "/lists";
+        return "/";
     }
 
     return value;

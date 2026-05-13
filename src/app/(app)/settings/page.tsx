@@ -13,6 +13,7 @@ import {
 import {SignOutButton} from "@/features/auth";
 import {Avatar, Toggle} from "@/shared/ui";
 import {cn} from "@/shared/lib";
+import {createClient} from "@/shared/api/supabase/serverClient";
 import React from "react";
 
 type Stat = {
@@ -24,13 +25,30 @@ type Stat = {
 type Chip = { emoji: string; label: string };
 type Store = { name: string; rank: "#1" | "#2" | "#3"; tone: "green" | "blue" | "sky" };
 
-export default function SettingsPage() {
-    const user = {
-        name: "A Test",
-        email: "a@test",
+export default async function SettingsPage() {
+    const supabase = await createClient();
+    const {data: {user}} = await supabase.auth.getUser();
+    const {data: profile} = user
+        ? await supabase
+            .from("profiles")
+            .select("display_name, avatar_url")
+            .eq("id", user.id)
+            .single()
+        : {data: null};
+
+    const displayName =
+        profile?.display_name ??
+        user?.email?.split("@")[0] ??
+        "Usuario";
+    const email = user?.email ?? "";
+    const initials = displayName.slice(0, 2).toUpperCase();
+
+    const userData = {
+        name: displayName,
+        email,
         plan: "Premium",
         since: "desde enero 2024",
-        initials: "AG",
+        initials,
     };
 
     const stats: Stat[] = [
@@ -58,22 +76,22 @@ export default function SettingsPage() {
             {/* Header */}
             <div className="flex items-center gap-4">
                 <div className="relative">
-                    <Avatar initials={user.initials} size="lg" color="#39B86B"/>
+                    <Avatar initials={userData.initials} size="lg" color="#39B86B"/>
                     <span
                         className="absolute bottom-0 right-0 block size-3 rounded-full border-2 border-white bg-brand"/>
                 </div>
 
                 <div className="min-w-0 flex-1">
-                    <p className="truncate text-lg font-black text-text-primary">{user.name}</p>
-                    <p className="truncate text-sm text-text-muted">{user.email}</p>
+                    <p className="truncate text-lg font-black text-text-primary">{userData.name}</p>
+                    <p className="truncate text-sm text-text-muted">{userData.email}</p>
 
                     <div className="mt-2 flex flex-wrap items-center gap-2">
             <span
                 className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(246,201,76,0.35)] px-3 py-1 text-[11px] font-bold text-text-primary">
               <Crown className="size-3.5"/>
-                {user.plan}
+                {userData.plan}
             </span>
-                        <span className="text-[11px] text-text-muted">{user.since}</span>
+                        <span className="text-[11px] text-text-muted">{userData.since}</span>
                     </div>
                 </div>
             </div>
