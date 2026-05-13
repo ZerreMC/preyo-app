@@ -5,38 +5,39 @@ CREATE OR REPLACE FUNCTION security.is_own_profile(p_user_id uuid)
     LANGUAGE sql
     SECURITY DEFINER
     SET search_path = pg_catalog, public
-AS $$
+AS
+$$
 SELECT p_user_id = (SELECT auth.uid());
 $$;
 
 GRANT EXECUTE ON FUNCTION security.is_own_profile(uuid) TO authenticated;
 
-ALTER TABLE public.profiles        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles
+    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_preferences
+    ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS profiles_select_own                   ON public.profiles;
-DROP POLICY IF EXISTS profiles_select_own_or_collaborator   ON public.profiles;
-DROP POLICY IF EXISTS profiles_insert_own                   ON public.profiles;
-DROP POLICY IF EXISTS profiles_update_own                   ON public.profiles;
-DROP POLICY IF EXISTS preferences_select_own                ON public.user_preferences;
-DROP POLICY IF EXISTS preferences_insert_own                ON public.user_preferences;
-DROP POLICY IF EXISTS preferences_update_own                ON public.user_preferences;
-DROP POLICY IF EXISTS preferences_delete_own                ON public.user_preferences;
+DROP POLICY IF EXISTS profiles_select_own ON public.profiles;
+DROP POLICY IF EXISTS profiles_select_own_or_collaborator ON public.profiles;
+DROP POLICY IF EXISTS profiles_insert_own ON public.profiles;
+DROP POLICY IF EXISTS profiles_update_own ON public.profiles;
+DROP POLICY IF EXISTS preferences_select_own ON public.user_preferences;
+DROP POLICY IF EXISTS preferences_insert_own ON public.user_preferences;
+DROP POLICY IF EXISTS preferences_update_own ON public.user_preferences;
+DROP POLICY IF EXISTS preferences_delete_own ON public.user_preferences;
 
 -- profiles: propio + colaboradores de listas compartidas
 -- (necesario para que cl_add_collaborator_by_email pueda leer email_public del target)
 CREATE POLICY profiles_select_own_or_collaborator ON public.profiles
     FOR SELECT TO authenticated
     USING (
-        security.is_own_profile(id)
-        OR EXISTS (
-            SELECT 1
-            FROM public.shopping_list_collaborators slc1
-            JOIN public.shopping_list_collaborators slc2
-                ON slc1.list_id = slc2.list_id
-            WHERE slc1.user_id = (SELECT auth.uid())
-              AND slc2.user_id = profiles.id
-        )
+    security.is_own_profile(id)
+        OR EXISTS (SELECT 1
+                   FROM public.shopping_list_collaborators slc1
+                            JOIN public.shopping_list_collaborators slc2
+                                 ON slc1.list_id = slc2.list_id
+                   WHERE slc1.user_id = (SELECT auth.uid())
+                     AND slc2.user_id = profiles.id)
     );
 
 -- UPDATE: solo propio
