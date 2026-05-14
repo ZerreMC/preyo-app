@@ -1,11 +1,12 @@
 "use client";
 
-import {useEffect, useMemo, useState, useTransition} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState, useTransition} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {ArrowLeft, Plus, Share2, Trash2} from "lucide-react";
 import {motion} from "motion/react";
 import {Button, Checkbox, Input, ProgressBar} from "@/shared/ui";
+import {cn} from "@/shared/lib";
 import {routes} from "@/shared/config/routes";
 import {createClient} from "@/shared/api/supabase/browserClient";
 import {
@@ -17,6 +18,7 @@ import {
     type Uuid,
 } from "@/features/collaborative-lists";
 import {useCollaborativeList} from "../model/hooks/useCollaborativeList";
+import type {CollaboratorRole} from "../model/ports/ListRepository";
 
 type ListDetailPageClientProps = {
     listId: string;
@@ -37,11 +39,13 @@ function getStoredListTitle(listId: string) {
     return window.localStorage.getItem(titleStorageKey(listId));
 }
 
-function canEdit(status: keyof typeof statusLabels) {
+function canEdit(status: keyof typeof statusLabels, role: CollaboratorRole | null) {
+    if (!role || role === "VIEWER") return false;
     return status === "draft" || status === "active";
 }
 
-function canToggle(status: keyof typeof statusLabels) {
+function canToggle(status: keyof typeof statusLabels, role: CollaboratorRole | null) {
+    if (!role || role === "VIEWER") return false;
     return status === "draft" || status === "active" || status === "shopping";
 }
 
@@ -49,16 +53,30 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
     const repository = useMemo(() => new SupabaseListRepository(supabase), [supabase]);
-    const {list, isLoading, error} = useCollaborativeList({
+    const {list, currentUserRole, isLoading, error} = useCollaborativeList({
         supabase,
         listId: listId as Uuid,
     });
     const [name, setName] = useState("");
     const [quantity, setQuantity] = useState("");
     const [formError, setFormError] = useState<string | null>(null);
+    const [bottomToast, setBottomToast] = useState<{message: string; kind: "error" | "success"} | null>(null);
+    const toastTimerRef = useRef<number | null>(null);
     const [storedListTitle] = useState(() => getStoredListTitle(listId));
     const [isPending, startTransition] = useTransition();
     const lastListTitle = list?.title ?? storedListTitle ?? "esta lista";
+
+    const showBottomToast = useCallback((message: string, kind: "error" | "success" = "error") => {
+        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+        setBottomToast({message, kind});
+        toastTimerRef.current = window.setTimeout(() => setBottomToast(null), 2800);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         if (!list?.title) return;
@@ -102,8 +120,9 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
         );
     }
 
-    const listCanEdit = canEdit(list.status);
-    const listCanToggle = canToggle(list.status);
+    const listCanEdit = canEdit(list.status, currentUserRole);
+    const listCanToggle = canToggle(list.status, currentUserRole);
+    const isViewer = currentUserRole === "VIEWER";
 
     const runCommand = (action: () => Promise<void>) => {
         setFormError(null);
@@ -111,12 +130,19 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
             try {
                 await action();
             } catch (commandError) {
-                setFormError(commandError instanceof Error ? commandError.message : "No se pudo completar la acción.");
+                const message = commandError instanceof Error ? commandError.message : "No se pudo completar la acción.";
+                setFormError(message);
+                showBottomToast(message, "error");
             }
         });
     };
 
     const handleAddItem = () => {
+        if (isViewer) {
+            showBottomToast("No tienes permisos para hacer esto.", "error");
+            return;
+        }
+
         const trimmedName = name.trim();
         const trimmedQuantity = quantity.trim();
         if (!trimmedName) {
@@ -145,6 +171,11 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
     };
 
     const handleToggle = (item: CollaborativeListItemReadModel) => {
+        if (isViewer) {
+            showBottomToast("No tienes permisos para hacer esto.", "error");
+            return;
+        }
+
         if (!listCanToggle) return;
 
         runCommand(async () => {
@@ -162,6 +193,11 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
     };
 
     const handleDelete = (item: CollaborativeListItemReadModel) => {
+        if (isViewer) {
+            showBottomToast("No tienes permisos para hacer esto.", "error");
+            return;
+        }
+
         if (!listCanEdit) return;
 
         runCommand(async () => {
@@ -179,6 +215,22 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
 
     return (
         <div className="min-h-dvh pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-28">
+            {/* Bottom toast */}
+            {bottomToast ? (
+                <div className="pointer-events-none fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex justify-center">
+                    <div
+                        role={bottomToast.kind === "error" ? "alert" : undefined}
+                        aria-live={bottomToast.kind !== "error" ? "polite" : undefined}
+                        className={cn(
+                            "rounded-full px-4 py-3 text-center text-sm font-semibold shadow-[0_12px_32px_rgba(24,24,27,0.18)]",
+                            bottomToast.kind === "error" ? "bg-[#FFF0F0] text-error" : "bg-text-primary text-white",
+                        )}
+                    >
+                        {bottomToast.message}
+                    </div>
+                </div>
+            ) : null}
+
             <header
                 className="glass-medium sticky top-0 z-30 border-b border-white/40 px-5 pt-[max(3.5rem,env(safe-area-inset-top))] pb-4">
                 <div className="mb-4 flex items-center justify-between">
@@ -215,7 +267,12 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
 
                 <ProgressBar value={stats.checked} max={Math.max(stats.total, 1)}/>
 
-                {!listCanEdit ? (
+                {isViewer ? (
+                    <div
+                        className="mt-3 rounded-2xl border border-divider bg-bg-soft px-3 py-2 text-xs font-semibold text-text-muted">
+                        Tienes acceso de solo lectura a esta lista.
+                    </div>
+                ) : !listCanEdit ? (
                     <div
                         className="mt-3 rounded-2xl border border-feedback-error-border bg-feedback-error-bg px-3 py-2 text-xs font-semibold text-error">
                         Lista en modo lectura. La edición de productos está desactivada.
@@ -224,45 +281,47 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
             </header>
 
             <main className="px-5 pt-4">
-                <form
-                    className="mb-5 rounded-3xl border border-divider bg-white p-4 shadow-[0_2px_10px_rgba(0,0,0,0.04)]"
-                    onSubmit={(event) => {
-                        event.preventDefault();
-                        handleAddItem();
-                    }}
-                >
-                    <div className="grid gap-3 sm:grid-cols-[1fr_12rem]">
-                        <Input
-                            label="Producto"
-                            value={name}
-                            onChange={(event) => setName(event.target.value)}
-                            placeholder="Ej: Leche"
-                            disabled={!listCanEdit || isPending}
-                        />
-                        <Input
-                            label="Cantidad"
-                            value={quantity}
-                            onChange={(event) => setQuantity(event.target.value)}
-                            placeholder="Opcional"
-                            disabled={!listCanEdit || isPending}
-                        />
-                    </div>
-                    {formError ? (
-                        <p className="mt-3 rounded-2xl border border-feedback-error-border bg-feedback-error-bg px-3 py-2 text-xs font-semibold text-error">
-                            {formError}
-                        </p>
-                    ) : null}
-                    <Button
-                        type="submit"
-                        fullWidth
-                        className="mt-4 rounded-2xl"
-                        leftIcon={<Plus size={16}/>}
-                        loading={isPending}
-                        disabled={!listCanEdit || !name.trim()}
+                {!isViewer ? (
+                    <form
+                        className="mb-5 rounded-3xl border border-divider bg-white p-4 shadow-[0_2px_10px_rgba(0,0,0,0.04)]"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            handleAddItem();
+                        }}
                     >
-                        Añadir producto
-                    </Button>
-                </form>
+                        <div className="grid gap-3 sm:grid-cols-[1fr_12rem]">
+                            <Input
+                                label="Producto"
+                                value={name}
+                                onChange={(event) => setName(event.target.value)}
+                                placeholder="Ej: Leche"
+                                disabled={!listCanEdit || isPending}
+                            />
+                            <Input
+                                label="Cantidad"
+                                value={quantity}
+                                onChange={(event) => setQuantity(event.target.value)}
+                                placeholder="Opcional"
+                                disabled={!listCanEdit || isPending}
+                            />
+                        </div>
+                        {formError ? (
+                            <p className="mt-3 rounded-2xl border border-feedback-error-border bg-feedback-error-bg px-3 py-2 text-xs font-semibold text-error">
+                                {formError}
+                            </p>
+                        ) : null}
+                        <Button
+                            type="submit"
+                            fullWidth
+                            className="mt-4 rounded-2xl"
+                            leftIcon={<Plus size={16}/>}
+                            loading={isPending}
+                            disabled={!listCanEdit || !name.trim()}
+                        >
+                            Añadir producto
+                        </Button>
+                    </form>
+                ) : null}
 
                 <ItemSection
                     title="Pendientes"
@@ -353,18 +412,22 @@ function ItemSection({
 
 function mapCommandError(error: { kind: string }, listName: string) {
     switch (error.kind) {
-        case "LIST_LOCKED":
-            return "La lista está en modo lectura.";
-        case "DUPLICATE_PRODUCT":
-            return "Ese producto ya existe en la lista.";
-        case "ITEM_NOT_FOUND":
-            return "No se encontró el producto.";
+        case "UNAUTHORIZED":
+            return "Debes iniciar sesión.";
         case "FORBIDDEN":
-            return "Ya no tienes permisos para modificar esta lista.";
+            return "No tienes permisos para hacer esto.";
         case "LIST_NOT_FOUND":
             return `Ya no tienes permisos para modificar la lista "${listName}".`;
-        case "UNAUTHORIZED":
-            return "Sesión expirada. Vuelve a iniciar sesión.";
+        case "NOT_FOUND":
+            return "No se ha encontrado el recurso.";
+        case "LIST_LOCKED":
+            return "La lista está bloqueada.";
+        case "DUPLICATE_PRODUCT":
+            return "Este producto ya está en la lista.";
+        case "ITEM_NOT_FOUND":
+            return "No se encontró el producto.";
+        case "CAPACITY_EXCEEDED":
+            return "Se ha superado el límite de peso de la lista.";
         default:
             return "No se pudo completar la acción.";
     }

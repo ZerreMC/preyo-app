@@ -17,6 +17,7 @@ type UseCollaborativeListParams = {
 
 type UseCollaborativeListState = {
     list: CollaborativeListReadModel | null;
+    currentUserRole: import('../ports/ListRepository').CollaboratorRole | null;
     isLoading: boolean;
     error: string | null;
 };
@@ -27,13 +28,14 @@ export function useCollaborativeList({
                                      }: UseCollaborativeListParams): UseCollaborativeListState {
     const [state, setState] = useState<UseCollaborativeListState>(() => ({
         list: null,
+        currentUserRole: null,
         isLoading: listId !== null,
         error: null,
     }));
 
     useEffect(() => {
         if (!listId) {
-            setState({list: null, isLoading: false, error: null});
+            setState({list: null, currentUserRole: null, isLoading: false, error: null});
             return;
         }
 
@@ -48,7 +50,12 @@ export function useCollaborativeList({
             try {
                 const list = await getCollaborativeList(supabase, listId);
                 if (isMounted && mySeq === fetchSeq) {
-                    setState({list, isLoading: false, error: null});
+                    setState({
+                        list,
+                        currentUserRole: list?.currentUserRole ?? null,
+                        isLoading: false,
+                        error: null,
+                    });
                 }
             } catch (err) {
                 if (isMounted && mySeq === fetchSeq) {

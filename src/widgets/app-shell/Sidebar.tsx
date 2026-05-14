@@ -15,7 +15,7 @@ type NavItem = {
 const NAV_MAIN: NavItem[] = [
     {label: "Inicio", icon: Home, href: "/"},
     {label: "Mis Listas", icon: ShoppingCart, href: "/lists"},
-    {label: "Comparador", icon: BarChart2, href: "/compare"},
+    {label: "Comparador", icon: BarChart2, href: "/app/comparador"},
     {label: "Ahorros", icon: TrendingDown, href: "/ahorros", disabled: true},
     {label: "Productos", icon: Package, href: "/products", disabled: true},
 ];

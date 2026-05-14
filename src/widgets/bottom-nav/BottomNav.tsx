@@ -14,12 +14,12 @@ const NAV_ITEMS: {
 }[] = [
     {id: "home", label: "Inicio", href: "/", icon: Home},
     {id: "lists", label: "Listas", href: "/lists", icon: ShoppingCart},
-    {id: "compare", label: "Tiendas", href: "/compare", icon: Store},
+    {id: "compare", label: "Tiendas", href: "/app/comparador", icon: Store},
     {id: "settings", label: "Perfil", href: "/settings", icon: User},
 ];
 
 /** Routes where the BottomNav is visible (exact match). */
-const MAIN_ROUTES = new Set(["/", "/lists", "/compare", "/settings", "/profile"]);
+const MAIN_ROUTES = new Set(["/", "/lists", "/compare", "/app/comparador", "/settings", "/profile"]);
 
 function shouldShowBottomNav(pathname: string): boolean {
     if (MAIN_ROUTES.has(pathname)) return true;

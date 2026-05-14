@@ -11,6 +11,7 @@ const BREADCRUMBS: Record<string, string[]> = {
     "/": ["Preyo", "Inicio"],
     "/lists": ["Preyo", "Mis Listas"],
     "/compare": ["Preyo", "Comparador"],
+    "/app/comparador": ["Preyo", "Comparador"],
     "/settings": ["Preyo", "Ajustes"],
 };
 

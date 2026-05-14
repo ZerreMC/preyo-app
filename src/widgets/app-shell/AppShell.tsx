@@ -14,7 +14,7 @@ interface AppShellProps {
     initials?: string;
 }
 
-const MAIN_ROUTES = new Set(["/", "/lists", "/compare", "/settings", "/profile"]);
+const MAIN_ROUTES = new Set(["/", "/lists", "/compare", "/app/comparador", "/settings", "/profile"]);
 
 function hasBottomNav(pathname: string): boolean {
     if (MAIN_ROUTES.has(pathname)) return true;

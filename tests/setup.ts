@@ -4,7 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 if (typeof globalThis.crypto === 'undefined') {
-    // @ts-ignore — Node 18 doesn't expose crypto as a bare global in all vitest pools
+    // @ts-expect-error — Node 18 doesn't expose crypto as a bare global in all vitest pools
     globalThis.crypto = webcrypto;
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import type {SupabaseClient} from "@supabase/supabase-js";
 import {createClient} from "@/shared/api/supabase/browserClient";
 import {SupabaseNotificationsRepository} from "../../api/SupabaseNotificationsRepository";
 import type {AppNotification, NotificationActionResult, NotificationsState} from "../types";
@@ -57,6 +58,35 @@ export function useNotifications() {
             if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
         };
     }, [refresh]);
+
+    // Realtime subscription: refresh when a new notification is broadcast to this user's channel
+    useEffect(() => {
+        let isMounted = true;
+        let channel: ReturnType<SupabaseClient["channel"]> | null = null;
+
+        supabase.auth.getUser().then(({data}) => {
+            const userId = data.user?.id;
+            if (!userId || !isMounted) return;
+
+            supabase.auth.getSession().then(({data: sessionData}) => {
+                if (!isMounted) return;
+
+                void supabase.realtime.setAuth(sessionData.session?.access_token ?? null);
+
+                channel = supabase
+                    .channel(`notifications:${userId}`, {config: {private: true}})
+                    .on("broadcast", {event: "INSERT"}, () => {
+                        if (isMounted) void refresh();
+                    })
+                    .subscribe();
+            });
+        });
+
+        return () => {
+            isMounted = false;
+            if (channel) void supabase.removeChannel(channel);
+        };
+    }, [supabase, refresh]);
 
     const markAllRead = useCallback(async () => {
         if (state.unreadCount === 0) return;

@@ -1,4 +1,5 @@
 'use strict';
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
 // Preloaded via --require in vitest forks poolOptions to intercept html-encoding-sniffer
 // before jsdom loads it. html-encoding-sniffer@6 does require('@exodus/bytes') which is
 // ESM-only and breaks CJS workers. This stub returns UTF-8 for all inputs.
