@@ -55,6 +55,66 @@ export type Database = {
                     },
                 ]
             }
+            notifications: {
+                Row: {
+                    actor_id: string | null
+                    body: string | null
+                    created_at: string
+                    id: string
+                    invite_token_id: string | null
+                    list_id: string | null
+                    metadata: Json
+                    read_at: string | null
+                    recipient_id: string
+                    resolved_at: string | null
+                    title: string
+                    type: string
+                }
+                Insert: {
+                    actor_id?: string | null
+                    body?: string | null
+                    created_at?: string
+                    id?: string
+                    invite_token_id?: string | null
+                    list_id?: string | null
+                    metadata?: Json
+                    read_at?: string | null
+                    recipient_id: string
+                    resolved_at?: string | null
+                    title: string
+                    type: string
+                }
+                Update: {
+                    actor_id?: string | null
+                    body?: string | null
+                    created_at?: string
+                    id?: string
+                    invite_token_id?: string | null
+                    list_id?: string | null
+                    metadata?: Json
+                    read_at?: string | null
+                    recipient_id?: string
+                    resolved_at?: string | null
+                    title?: string
+                    type?: string
+                }
+                Relationships: [
+                    {
+                        foreignKeyName: "notifications_invite_token_id_fkey"
+                        columns: ["invite_token_id"]
+                        isOneToOne: false
+                        referencedRelation: "shopping_list_invites"
+                        referencedColumns: ["id"]
+                    },
+                    {
+                        foreignKeyName: "notifications_list_id_fkey"
+                        columns: ["list_id"]
+                        isOneToOne: false
+                        referencedRelation: "shopping_lists"
+                        referencedColumns: ["id"]
+                    },
+                ]
+            }
             profiles: {
                 Row: {
                     avatar_url: string | null
@@ -292,6 +352,7 @@ export type Database = {
         }
         Functions: {
             cl_accept_invite: { Args: { p_token: string }; Returns: string }
+            cl_accept_invite_by_id: { Args: { p_invite_id: string }; Returns: string }
             cl_add_collaborator_by_email: {
                 Args: { p_email: string; p_list_id: string; p_role: string }
                 Returns: undefined
@@ -342,6 +403,8 @@ export type Database = {
                 Args: { p_list_id: string; p_target_user_id: string }
                 Returns: undefined
             }
+            cl_reject_invite: { Args: { p_token: string }; Returns: undefined }
+            cl_reject_invite_by_id: { Args: { p_invite_id: string }; Returns: undefined }
             cl_revoke_invite: { Args: { p_invite_id: string }; Returns: undefined }
             cl_update_collaborator_invite_permission: {
                 Args: {
@@ -351,6 +414,33 @@ export type Database = {
                 }
                 Returns: undefined
             }
+            notifications_get_my_recent: {
+                Args: { p_limit?: number }
+                Returns: {
+                    actor_avatar_url: string | null
+                    actor_display_name: string | null
+                    actor_id: string | null
+                    body: string | null
+                    created_at: string
+                    id: string
+                    invite_email: string | null
+                    invite_expires_at: string | null
+                    invite_revoked_at: string | null
+                    invite_role: string | null
+                    invite_token_id: string | null
+                    invite_used_at: string | null
+                    list_id: string | null
+                    list_title: string | null
+                    metadata: Json
+                    read_at: string | null
+                    recipient_id: string
+                    resolved_at: string | null
+                    title: string
+                    type: string
+                }[]
+            }
+            notifications_mark_all_read: { Args: Record<PropertyKey, never>; Returns: undefined }
+            notifications_mark_read: { Args: { p_notification_id: string }; Returns: undefined }
             cl_remove_item: {
                 Args: { p_command_id: string; p_item_id: string; p_list_id: string }
                 Returns: undefined

@@ -1,10 +1,11 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {usePathname} from "next/navigation";
 import {Bell, ChevronRight, Search, Menu, X, Zap} from "lucide-react";
 import Link from "next/link";
 import {useLayout} from "@/widgets/app-shell/LayoutContext";
+import {NotificationsPopover, useNotifications} from "@/features/notifications";
 
 const BREADCRUMBS: Record<string, string[]> = {
     "/": ["Preyo", "Inicio"],
@@ -25,11 +26,53 @@ export function TopBar({
                        }: TopBarProps) {
     const pathname = usePathname();
     const [focused, setFocused] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const notificationsRef = useRef<HTMLDivElement | null>(null);
     const layout = useLayout();
+    const notifications = useNotifications();
+    const {
+        unreadCount,
+        notifications: notificationItems,
+        loading: notificationsLoading,
+        error: notificationsError,
+        actingId,
+        toast,
+        refresh,
+        markAllRead,
+        markRead,
+        acceptInvite,
+        rejectInvite,
+    } = notifications;
 
     const crumbs =
         BREADCRUMBS[pathname] ??
         (pathname.startsWith("/lists/") ? ["Preyo", "Mis Listas", "Detalle"] : ["Preyo"]);
+
+    useEffect(() => {
+        if (!notificationsOpen) return;
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (!notificationsRef.current?.contains(event.target as Node)) {
+                setNotificationsOpen(false);
+            }
+        };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") setNotificationsOpen(false);
+        };
+
+        document.addEventListener("mousedown", handlePointerDown);
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("mousedown", handlePointerDown);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [notificationsOpen]);
+
+    useEffect(() => {
+        if (notificationsOpen) void markAllRead();
+    }, [notificationsOpen, markAllRead]);
 
     return (
         <header className="h-15 bg-white border-b border-divider flex items-center px-5 gap-4 shrink-0 w-full">
@@ -95,15 +138,39 @@ export function TopBar({
 
             {/* Right actions */}
             <div className="flex items-center gap-2 shrink-0 ml-auto">
-                <button
-                    type="button"
-                    aria-label="Notificaciones"
-                    className="relative size-9 rounded-base border border-divider flex items-center justify-center hover:bg-bg-hover transition-colors"
-                >
-                    <Bell size={16} className="text-nav-secondary"/>
-                    <span
-                        className="absolute top-1.75 right-1.75 size-1.5 rounded-full bg-error border-[1.5px] border-white"/>
-                </button>
+                <div ref={notificationsRef} className="relative">
+                    <button
+                        type="button"
+                        aria-label="Notificaciones"
+                        aria-haspopup="dialog"
+                        aria-expanded={notificationsOpen}
+                        className="relative size-9 rounded-base border border-divider flex items-center justify-center hover:bg-bg-hover transition-colors"
+                        onClick={() => setNotificationsOpen((value) => !value)}
+                    >
+                        <Bell size={16} className="text-nav-secondary"/>
+                        {unreadCount > 0 ? (
+                            <span
+                                className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full border-2 border-white bg-brand px-1 text-[10px] font-bold leading-4 text-white"
+                            >
+                                {unreadCount > 9 ? "9+" : unreadCount}
+                            </span>
+                        ) : null}
+                    </button>
+
+                    <NotificationsPopover
+                        open={notificationsOpen}
+                        notifications={notificationItems}
+                        loading={notificationsLoading}
+                        error={notificationsError}
+                        actingId={actingId}
+                        toast={toast}
+                        onRefresh={() => void refresh()}
+                        onMarkAllRead={() => void markAllRead()}
+                        onMarkRead={(notificationId) => void markRead(notificationId)}
+                        onAccept={(notification) => void acceptInvite(notification)}
+                        onReject={(notification) => void rejectInvite(notification)}
+                    />
+                </div>
 
                 {hasIntelligencePanel ? (
                     <button
