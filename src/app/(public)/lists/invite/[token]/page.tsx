@@ -1,5 +1,5 @@
 import {redirect} from "next/navigation";
-import {AcceptInviteCommandHandler, SupabaseListRepository, type Uuid} from "@/features/collaborative-lists";
+import {AcceptInviteCommandHandler, SupabaseListRepository} from "@/features/collaborative-lists";
 import {createClient} from "@/shared/api/supabase/serverClient";
 
 type InvitePageProps = {
@@ -16,7 +16,7 @@ export default async function Page({params}: InvitePageProps) {
     }
 
     const repository = new SupabaseListRepository(supabase);
-    const result = await new AcceptInviteCommandHandler(repository).execute({token: token as Uuid});
+    const result = await new AcceptInviteCommandHandler(repository).execute({token});
 
     if (!result.ok) {
         redirect("/lists");

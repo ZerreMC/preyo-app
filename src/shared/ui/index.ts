@@ -21,3 +21,5 @@ export {Avatar, AvatarStack} from "./Avatar";
 export type {AvatarProps, AvatarStackProps} from "./Avatar";
 export {ProgressBar} from "./ProgressBar";
 export type {ProgressBarProps} from "./ProgressBar";
+export {QuantityStepper} from "./QuantityStepper";
+export type {QuantityStepperProps} from "./QuantityStepper";

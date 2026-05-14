@@ -2,13 +2,14 @@
 
 import {useMemo, useState, useTransition} from "react";
 import {AnimatePresence, motion} from "motion/react";
-import {Check, Plus, Search, X} from "lucide-react";
+import {Check, LayoutGrid, List, Plus, Search, X} from "lucide-react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {ListCard} from "@/entities/shopping-list";
 import {routes} from "@/shared/config/routes";
 import {Button, Input} from "@/shared/ui";
 import {createClient} from "@/shared/api/supabase/browserClient";
+import {cn} from "@/shared/lib";
 import {
     CreateListCommandHandler,
     SupabaseListRepository,
@@ -20,13 +21,8 @@ type ListsPageClientProps = {
     lists: ShoppingListSummary[];
 };
 
-const statusLabels: Record<ShoppingListSummary["status"], string> = {
-    draft: "Borrador",
-    active: "Activa",
-    shopping: "En compra",
-    completed: "Completada",
-    archived: "Archivada",
-};
+type StatusFilter = "all" | "active" | "completed" | "draft";
+type ViewMode = "grid" | "list";
 
 const statusEmoji: Record<ShoppingListSummary["status"], string> = {
     draft: "📝",
@@ -50,24 +46,41 @@ function isReadOnlyStatus(status: ShoppingListSummary["status"]) {
     return status === "completed" || status === "archived";
 }
 
+const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
+    {id: "all", label: "Todas"},
+    {id: "active", label: "Activa"},
+    {id: "completed", label: "Completada"},
+    {id: "draft", label: "Borrador"},
+];
+
 export function ListsPageClient({lists}: ListsPageClientProps) {
     const router = useRouter();
     const [items, setItems] = useState(lists);
     const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+    const [viewMode, setViewMode] = useState<ViewMode>("grid");
     const [isCreateOpen, setCreateOpen] = useState(false);
     const [newTitle, setNewTitle] = useState("");
     const [categoryId, setCategoryId] = useState<(typeof listCategories)[number]["id"]>("semanal");
     const [formError, setFormError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
 
+    const activeCount = useMemo(
+        () => items.filter((l) => l.status === "active" || l.status === "shopping").length,
+        [items],
+    );
+
     const filteredLists = useMemo(() => {
+        let result = items;
         const query = searchQuery.trim().toLowerCase();
-        if (!query) return items;
+        if (query) result = result.filter((l) => l.title.toLowerCase().includes(query));
+        if (statusFilter === "active") result = result.filter((l) => l.status === "active" || l.status === "shopping");
+        if (statusFilter === "completed") result = result.filter((l) => l.status === "completed" || l.status === "archived");
+        if (statusFilter === "draft") result = result.filter((l) => l.status === "draft");
+        return result;
+    }, [items, searchQuery, statusFilter]);
 
-        return items.filter((list) => list.title.toLowerCase().includes(query));
-    }, [items, searchQuery]);
-
-    const selectedCategory = listCategories.find((category) => category.id === categoryId) ?? listCategories[0];
+    const selectedCategory = listCategories.find((c) => c.id === categoryId) ?? listCategories[0];
 
     const closeCreateSheet = () => {
         if (isPending) return;
@@ -96,13 +109,13 @@ export function ListsPageClient({lists}: ListsPageClientProps) {
                 });
 
                 if (!result.ok) {
-                    console.error('[CreateList] error:', result.error);
+                    console.error("[CreateList] error:", result.error);
                     setFormError(
-                        result.error.kind === 'UNAUTHORIZED'
-                            ? 'Sesión expirada. Recarga la página.'
-                            : result.error.kind === 'INVALID_INPUT' && result.error.message
+                        result.error.kind === "UNAUTHORIZED"
+                            ? "Sesión expirada. Recarga la página."
+                            : result.error.kind === "INVALID_INPUT" && result.error.message
                                 ? result.error.message
-                                : 'No se pudo crear la lista.'
+                                : "No se pudo crear la lista.",
                     );
                     return;
                 }
@@ -120,84 +133,199 @@ export function ListsPageClient({lists}: ListsPageClientProps) {
     };
 
     return (
-        <div className="min-h-dvh pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-28">
-            <div className="px-5 pt-[max(3.5rem,env(safe-area-inset-top))] pb-3">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                    <h1 className="min-w-0 text-[26px] font-extrabold tracking-normal text-text-primary">
-                        Mis listas
-                    </h1>
+        <div className="min-h-dvh bg-bg-main pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-28">
+
+            {/* ── Header ─────────────────────────────────────────────── */}
+            <div className="px-5 pt-[max(3.5rem,env(safe-area-inset-top))] pb-4">
+                <div className="flex items-start justify-between gap-3">
+                    <div>
+                        <h1 className="text-[26px] font-extrabold tracking-normal text-text-primary">
+                            Mis Listas
+                        </h1>
+                        <p className="text-[13px] text-text-muted">
+                            {activeCount > 0
+                                ? `${activeCount} lista${activeCount !== 1 ? "s" : ""} activa${activeCount !== 1 ? "s" : ""}`
+                                : "Sin listas activas"}
+                        </p>
+                    </div>
                     <Button
                         size="sm"
                         leftIcon={<Plus size={15}/>}
-                        className="h-10 min-w-fit shrink-0 flex-row flex-nowrap whitespace-nowrap rounded-2xl px-4 text-[13px]"
+                        className="mt-1 h-10 min-w-fit shrink-0 flex-row flex-nowrap whitespace-nowrap rounded-2xl px-4 text-[13px]"
                         onClick={() => setCreateOpen(true)}
                     >
-                        Nueva
+                        Nueva lista
                     </Button>
                 </div>
+            </div>
 
+            {/* ── Toolbar: buscador + filtros + toggle ───────────────── */}
+            <div className="space-y-3 px-5 pb-4">
                 <Input
                     leftIcon={Search}
                     value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Buscar en mis listas..."
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar lista..."
                     aria-label="Buscar en mis listas"
                 />
+
+                <div className="flex items-center gap-2">
+                    {/* Filter pills */}
+                    <div className="flex flex-1 items-center gap-1.5 overflow-x-auto pb-0.5">
+                        {STATUS_FILTERS.map((f) => (
+                            <button
+                                key={f.id}
+                                type="button"
+                                onClick={() => setStatusFilter(f.id)}
+                                className={cn(
+                                    "shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors",
+                                    statusFilter === f.id
+                                        ? "bg-brand text-white"
+                                        : "bg-bg-hover text-text-muted hover:text-text-primary",
+                                )}
+                            >
+                                {f.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* View toggle */}
+                    <div className="flex shrink-0 items-center gap-1 rounded-xl bg-bg-hover p-1">
+                        <button
+                            type="button"
+                            aria-label="Vista cuadrícula"
+                            onClick={() => setViewMode("grid")}
+                            className={cn(
+                                "grid size-7 place-items-center rounded-lg transition-colors",
+                                viewMode === "grid"
+                                    ? "bg-brand/14 text-brand"
+                                    : "text-text-muted hover:text-text-primary",
+                            )}
+                        >
+                            <LayoutGrid size={15}/>
+                        </button>
+                        <button
+                            type="button"
+                            aria-label="Vista lista"
+                            onClick={() => setViewMode("list")}
+                            className={cn(
+                                "grid size-7 place-items-center rounded-lg transition-colors",
+                                viewMode === "list"
+                                    ? "bg-brand/14 text-brand"
+                                    : "text-text-muted hover:text-text-primary",
+                            )}
+                        >
+                            <List size={15}/>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <div className="mb-4 flex items-center justify-between px-5">
-                <p className="text-[13px] text-text-muted">
-                    {filteredLists.length} lista{filteredLists.length !== 1 ? "s" : ""}
-                </p>
-                <p className="text-[13px] font-medium text-text-muted">Más recientes</p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 px-5 md:grid-cols-2 lg:grid-cols-3">
-                {filteredLists.length > 0 ? (
-                    filteredLists.map((list) => (
+            {/* ── Contenido ──────────────────────────────────────────── */}
+            {filteredLists.length === 0 ? (
+                <div className="px-5">
+                    <EmptyState onCreate={() => setCreateOpen(true)}/>
+                </div>
+            ) : viewMode === "grid" ? (
+                <div className="grid grid-cols-1 gap-4 px-5 sm:grid-cols-2 xl:grid-cols-3">
+                    {filteredLists.map((list) => (
                         <motion.div key={list.id} whileTap={{scale: 0.98}} className="h-full">
                             <Link
                                 href={routes.listDetail(list.id)}
-                                className="block h-full rounded-3xl transition active:scale-[0.98] hover:shadow-md"
+                                className="block h-full rounded-3xl transition hover:shadow-md active:scale-[0.98]"
                                 aria-label={`Abrir ${list.title}`}
                             >
                                 <ListCard
+                                    variant="grid"
                                     list={{
                                         id: list.id,
                                         title: list.title,
                                         categoryEmoji: statusEmoji[list.status],
+                                        status: list.status,
                                         itemCount: list.itemCount,
-                                        totalPrice: 0,
-                                        progressPct: list.itemCount > 0 ? Math.round((list.checkedCount / list.itemCount) * 100) : 0,
+                                        checkedCount: list.checkedCount,
+                                        totalPrice: null,
+                                        estimatedSavings: null,
+                                        progressPct: list.itemCount > 0
+                                            ? Math.round((list.checkedCount / list.itemCount) * 100)
+                                            : 0,
                                         collaborators: list.collaborators,
                                         isLocked: isReadOnlyStatus(list.status),
+                                        updatedAt: list.updatedAt,
                                     }}
                                     className="h-full shadow-[0_2px_10px_rgba(0,0,0,0.04)]"
                                 />
-                                <span className="mt-2 block px-1 text-[11px] font-semibold text-text-muted">
-                                    {statusLabels[list.status]} · {list.collaborators.length} colaborador{list.collaborators.length !== 1 ? "es" : ""}
-                                </span>
                             </Link>
                         </motion.div>
-                    ))
-                ) : (
-                    <div className="md:col-span-2 lg:col-span-3">
-                        <EmptyState onCreate={() => setCreateOpen(true)}/>
+                    ))}
+                </div>
+            ) : (
+                /* ── Vista lista / tabla ─────────────────────────────── */
+                <div className="mx-5 overflow-hidden rounded-2xl border border-divider bg-white">
+                    {/* Cabeceras */}
+                    <div className="flex items-center gap-3 border-b border-divider bg-bg-hover px-4 py-2.5">
+                        <span className="flex-1 text-[11px] font-extrabold uppercase tracking-[0.07em] text-text-muted">
+                            Lista
+                        </span>
+                        <span
+                            className="w-24 shrink-0 text-[11px] font-extrabold uppercase tracking-[0.07em] text-text-muted">
+                            Estado
+                        </span>
+                        <span
+                            className="w-20 shrink-0 text-right text-[11px] font-extrabold uppercase tracking-[0.07em] text-text-muted">
+                            Total
+                        </span>
+                        <span
+                            className="w-20 shrink-0 text-right text-[11px] font-extrabold uppercase tracking-[0.07em] text-text-muted">
+                            Ahorro
+                        </span>
+                        <span
+                            className="w-28 shrink-0 text-right text-[11px] font-extrabold uppercase tracking-[0.07em] text-text-muted">
+                            Actualizada
+                        </span>
                     </div>
-                )}
-            </div>
 
+                    {filteredLists.map((list) => (
+                        <Link
+                            key={list.id}
+                            href={routes.listDetail(list.id)}
+                            className="block transition hover:bg-bg-hover active:bg-divider"
+                            aria-label={`Abrir ${list.title}`}
+                        >
+                            <ListCard
+                                variant="row"
+                                list={{
+                                    id: list.id,
+                                    title: list.title,
+                                    categoryEmoji: statusEmoji[list.status],
+                                    status: list.status,
+                                    itemCount: list.itemCount,
+                                    checkedCount: list.checkedCount,
+                                    totalPrice: null,
+                                    estimatedSavings: null,
+                                    progressPct: list.itemCount > 0
+                                        ? Math.round((list.checkedCount / list.itemCount) * 100)
+                                        : 0,
+                                    collaborators: list.collaborators,
+                                    isLocked: isReadOnlyStatus(list.status),
+                                    updatedAt: list.updatedAt,
+                                }}
+                            />
+                        </Link>
+                    ))}
+                </div>
+            )}
+
+            {/* ── Modal crear lista ───────────────────────────────────── */}
             <AnimatePresence>
                 {isCreateOpen ? (
                     <motion.div
-                        className="fixed inset-0 z-80 flex flex-col justify-end bg-text-primary/45 backdrop-blur-[8px]"
+                        className="fixed inset-0 z-80 flex flex-col justify-end bg-text-primary/45 backdrop-blur-sm"
                         initial={{opacity: 0}}
                         animate={{opacity: 1}}
                         exit={{opacity: 0}}
-                        onClick={(event) => {
-                            if (event.target === event.currentTarget) {
-                                closeCreateSheet();
-                            }
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) closeCreateSheet();
                         }}
                     >
                         <motion.form
@@ -206,9 +334,9 @@ export function ListsPageClient({lists}: ListsPageClientProps) {
                             exit={{y: "100%", opacity: 0}}
                             transition={{type: "spring", stiffness: 280, damping: 32}}
                             className="max-h-[90dvh] overflow-y-auto rounded-t-3xl bg-bg-main shadow-[0_-8px_48px_rgba(0,0,0,0.18)]"
-                            onClick={(event) => event.stopPropagation()}
-                            onSubmit={(event) => {
-                                event.preventDefault();
+                            onClick={(e) => e.stopPropagation()}
+                            onSubmit={(e) => {
+                                e.preventDefault();
                                 handleCreate();
                             }}
                         >
@@ -247,7 +375,7 @@ export function ListsPageClient({lists}: ListsPageClientProps) {
                                         <input
                                             autoFocus
                                             value={newTitle}
-                                            onChange={(event) => setNewTitle(event.target.value)}
+                                            onChange={(e) => setNewTitle(e.target.value)}
                                             placeholder="Ej: Compra semanal..."
                                             className="min-w-0 flex-1 bg-transparent text-[15px] text-text-primary outline-none placeholder:text-text-muted"
                                         />
@@ -266,7 +394,6 @@ export function ListsPageClient({lists}: ListsPageClientProps) {
                                     <div className="grid grid-cols-4 gap-2">
                                         {listCategories.map((category) => {
                                             const active = category.id === categoryId;
-
                                             return (
                                                 <motion.button
                                                     key={category.id}
@@ -281,8 +408,9 @@ export function ListsPageClient({lists}: ListsPageClientProps) {
                                                     ].join(" ")}
                                                 >
                                                     <span className="text-xl">{category.emoji}</span>
-                                                    <span
-                                                        className={active ? "text-center text-[10px] font-bold leading-tight text-brand-active" : "text-center text-[10px] font-medium leading-tight text-text-muted"}>
+                                                    <span className={active
+                                                        ? "text-center text-[10px] font-bold leading-tight text-brand-active"
+                                                        : "text-center text-[10px] font-medium leading-tight text-text-muted"}>
                                                         {category.label}
                                                     </span>
                                                 </motion.button>

@@ -4,6 +4,7 @@ export type {
     CollaboratorRole,
     ListCollaborator,
     ListRepository,
+    PendingListInvite,
     ShoppingListSummary,
 } from "./model/ports/ListRepository";
 export {SupabaseListRepository} from "./api/SupabaseListRepository";
@@ -16,10 +17,14 @@ export {ChangeStatusCommandHandler} from "./model/commands/ChangeStatusCommandHa
 export {CreateListCommandHandler} from "./model/commands/CreateListCommandHandler";
 export {DeleteListCommandHandler} from "./model/commands/DeleteListCommandHandler";
 export {GenerateInviteTokenCommandHandler} from "./model/commands/GenerateInviteTokenCommandHandler";
+export {RevokeInviteCommandHandler} from "./model/commands/RevokeInviteCommandHandler";
 export {RemoveCollaboratorCommandHandler} from "./model/commands/RemoveCollaboratorCommandHandler";
 export {RemoveItemCommandHandler} from "./model/commands/RemoveItemCommandHandler";
 export {RenameListCommandHandler} from "./model/commands/RenameListCommandHandler";
 export {ToggleItemCommandHandler} from "./model/commands/ToggleItemCommandHandler";
+export {
+    UpdateCollaboratorInvitePermissionCommandHandler
+} from "./model/commands/UpdateCollaboratorInvitePermissionCommandHandler";
 
 export {getCollaborativeList} from "./model/queries/getCollaborativeList";
 export type {CollaborativeListReadModel, CollaborativeListItemReadModel} from "./model/queries/getCollaborativeList";

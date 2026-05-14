@@ -13,6 +13,7 @@ import {
     type DeleteListParams,
     type ListCollaborator,
     type ListRepository,
+    type PendingListInvite,
     type RemoveItemParams,
     type RenameListParams,
     type ShoppingListSummary,
@@ -26,6 +27,7 @@ type PreyoSupabaseClient = SupabaseClient<Database>;
 type ShoppingListRow = Database['public']['Tables']['shopping_lists']['Row'];
 type ShoppingListItemRow = Database['public']['Tables']['shopping_list_items']['Row'];
 type CollaboratorRow = Database['public']['Tables']['shopping_list_collaborators']['Row'];
+type PendingInviteRow = Database['public']['Tables']['shopping_list_invites']['Row'];
 
 type ListWithItemsRow = ShoppingListRow & {
     items: Pick<
@@ -40,7 +42,7 @@ type CollaboratorProfile = {
     avatar_url: string | null;
 } | null;
 
-type CollaboratorWithProfile = Pick<CollaboratorRow, 'user_id' | 'role'> & {
+type CollaboratorWithProfile = Pick<CollaboratorRow, 'user_id' | 'role' | 'can_invite'> & {
     profile: CollaboratorProfile;
 };
 
@@ -55,6 +57,12 @@ function mapRpcErrorCode(message: string): RepositoryErrorCode {
     if (message.includes('UNAUTHORIZED')) return 'UNAUTHORIZED';
     if (message.includes('FORBIDDEN')) return 'FORBIDDEN';
     if (message.includes('USER_NOT_FOUND')) return 'USER_NOT_FOUND';
+    if (message.includes('OWNER_PROTECTED')) return 'OWNER_PROTECTED';
+    if (message.includes('LIMIT_REACHED')) return 'LIMIT_REACHED';
+    if (message.includes('ALREADY_MEMBER')) return 'ALREADY_MEMBER';
+    if (message.includes('INVITE_PENDING')) return 'INVITE_PENDING';
+    if (message.includes('INVALID_EMAIL')) return 'INVALID_EMAIL';
+    if (message.includes('INVITE_REVOKED')) return 'INVITE_REVOKED';
     if (message.includes('INVITE_USED')) return 'INVITE_USED';
     if (message.includes('INVITE_EXPIRED')) return 'INVITE_EXPIRED';
     if (message.includes('NOT_FOUND')) return 'NOT_FOUND';
@@ -98,9 +106,23 @@ function mapCollaborator(row: CollaboratorWithProfile): ListCollaborator {
     return {
         id: row.user_id as Uuid,
         role: row.role as CollaboratorRole,
+        canInvite: row.role === 'OWNER' || row.can_invite,
         name: displayName ?? `Usuario ${row.user_id.slice(0, 8)}`,
         initials,
         color: collaboratorColor(row.user_id),
+    };
+}
+
+function mapPendingInvite(row: PendingInviteRow): PendingListInvite {
+    return {
+        id: row.id as Uuid,
+        email: row.email,
+        role: row.role as Exclude<CollaboratorRole, 'OWNER'>,
+        canInvite: row.can_invite,
+        expiresAt: row.expires_at,
+        usedAt: row.used_at,
+        revokedAt: row.revoked_at,
+        createdAt: row.created_at,
     };
 }
 
@@ -121,6 +143,7 @@ export class SupabaseListRepository implements ListRepository {
                 collaborators:shopping_list_collaborators(
                     user_id,
                     role,
+                    can_invite,
                     profile:profiles(display_name, avatar_url)
                 )
             `)
@@ -248,6 +271,7 @@ export class SupabaseListRepository implements ListRepository {
             .select(`
                 user_id,
                 role,
+                can_invite,
                 profile:profiles(display_name, avatar_url)
             `)
             .eq('list_id', listId)
@@ -262,14 +286,18 @@ export class SupabaseListRepository implements ListRepository {
         listId: Uuid,
         email: string,
         role: Exclude<CollaboratorRole, 'OWNER'>,
-    ): Promise<void> {
-        const {error} = await this.supabase.rpc('cl_add_collaborator_by_email', {
+        canInvite = false,
+    ): Promise<string> {
+        const {data, error} = await this.supabase.rpc('cl_generate_invite_token', {
             p_list_id: listId,
             p_email: email,
             p_role: role,
+            p_can_invite: canInvite,
         });
 
         if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
+
+        return data;
     }
 
     async removeCollaborator(listId: Uuid, userId: Uuid): Promise<void> {
@@ -281,10 +309,16 @@ export class SupabaseListRepository implements ListRepository {
         if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
     }
 
-    async generateInviteToken(listId: Uuid, role: Exclude<CollaboratorRole, 'OWNER'> = 'EDITOR'): Promise<string> {
+    async generateInviteToken(
+        listId: Uuid,
+        role: Exclude<CollaboratorRole, 'OWNER'> = 'EDITOR',
+        canInvite = false,
+    ): Promise<string> {
         const {data, error} = await this.supabase.rpc('cl_generate_invite_token', {
             p_list_id: listId,
             p_role: role,
+            p_email: null,
+            p_can_invite: canInvite,
         });
 
         if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
@@ -292,7 +326,7 @@ export class SupabaseListRepository implements ListRepository {
         return data;
     }
 
-    async acceptInvite(token: Uuid): Promise<Uuid> {
+    async acceptInvite(token: string): Promise<Uuid> {
         const {data, error} = await this.supabase.rpc('cl_accept_invite', {
             p_token: token,
         });
@@ -300,5 +334,39 @@ export class SupabaseListRepository implements ListRepository {
         if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
 
         return data as Uuid;
+    }
+
+    async getPendingInvites(listId: Uuid): Promise<PendingListInvite[]> {
+        const {data, error} = await this.supabase
+            .from('shopping_list_invites')
+            .select('id, list_id, email, role, can_invite, token_hash, expires_at, used_at, revoked_at, created_by, created_at')
+            .eq('list_id', listId)
+            .is('used_at', null)
+            .is('revoked_at', null)
+            .gt('expires_at', new Date().toISOString())
+            .order('created_at', {ascending: false})
+            .returns<PendingInviteRow[]>();
+
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
+
+        return (data ?? []).map(mapPendingInvite);
+    }
+
+    async revokeInvite(inviteId: Uuid): Promise<void> {
+        const {error} = await this.supabase.rpc('cl_revoke_invite', {
+            p_invite_id: inviteId,
+        });
+
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
+    }
+
+    async updateCollaboratorCanInvite(listId: Uuid, userId: Uuid, canInvite: boolean): Promise<void> {
+        const {error} = await this.supabase.rpc('cl_update_collaborator_invite_permission', {
+            p_list_id: listId,
+            p_target_user_id: userId,
+            p_can_invite: canInvite,
+        });
+
+        if (error) throw new RepositoryError(mapRpcErrorCode(error.message), error.message);
     }
 }

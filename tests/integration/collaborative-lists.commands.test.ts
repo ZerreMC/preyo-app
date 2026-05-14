@@ -84,14 +84,15 @@ describeIntegration('Collaborative Lists commands', () => {
             .update({email_public: true})
             .eq('id', collaborator.user.id);
 
-        await repository.addCollaboratorByEmail(listId, collaborator.user.email ?? '', 'EDITOR');
+        const emailInviteToken = await repository.addCollaboratorByEmail(listId, collaborator.user.email ?? '', 'EDITOR');
+        expect(await collaboratorRepository.acceptInvite(emailInviteToken)).toBe(listId);
         expect(await collaboratorRepository.getList(listId)).not.toBeNull();
 
         await repository.removeCollaborator(listId, collaborator.user.id as Uuid);
         expect(await collaboratorRepository.getList(listId)).toBeNull();
 
         const token = await repository.generateInviteToken(listId);
-        const acceptedListId = await collaboratorRepository.acceptInvite(token as Uuid);
+        const acceptedListId = await collaboratorRepository.acceptInvite(token);
         expect(acceptedListId).toBe(listId);
     });
 });

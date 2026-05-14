@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo, useState, useTransition} from "react";
+import {useEffect, useMemo, useState, useTransition} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {ArrowLeft, Plus, Share2, Trash2} from "lucide-react";
@@ -30,6 +30,13 @@ const statusLabels = {
     archived: "Archivada",
 } as const;
 
+const titleStorageKey = (listId: string) => `preyo:last-list-title:${listId}`;
+
+function getStoredListTitle(listId: string) {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem(titleStorageKey(listId));
+}
+
 function canEdit(status: keyof typeof statusLabels) {
     return status === "draft" || status === "active";
 }
@@ -49,7 +56,14 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
     const [name, setName] = useState("");
     const [quantity, setQuantity] = useState("");
     const [formError, setFormError] = useState<string | null>(null);
+    const [storedListTitle] = useState(() => getStoredListTitle(listId));
     const [isPending, startTransition] = useTransition();
+    const lastListTitle = list?.title ?? storedListTitle ?? "esta lista";
+
+    useEffect(() => {
+        if (!list?.title) return;
+        window.localStorage.setItem(titleStorageKey(listId), list.title);
+    }, [list?.title, listId]);
 
     const stats = useMemo(() => {
         const items = list?.items ?? [];
@@ -82,7 +96,7 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
                     Volver a listas
                 </Button>
                 <p className="mt-4 rounded-3xl border border-feedback-error-border bg-feedback-error-bg p-5 text-sm font-medium text-error">
-                    {error ?? "No se encontró la lista."}
+                    {`Ya no tienes permisos para acceder a la lista "${lastListTitle}".`}
                 </p>
             </div>
         );
@@ -122,7 +136,7 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
             });
 
             if (!result.ok) {
-                throw new Error(mapCommandError(result.error));
+                throw new Error(mapCommandError(result.error, lastListTitle));
             }
 
             setName("");
@@ -142,7 +156,7 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
             });
 
             if (!result.ok) {
-                throw new Error(mapCommandError(result.error));
+                throw new Error(mapCommandError(result.error, lastListTitle));
             }
         });
     };
@@ -158,7 +172,7 @@ export function ListDetailPageClient({listId}: ListDetailPageClientProps) {
             });
 
             if (!result.ok) {
-                throw new Error(mapCommandError(result.error));
+                throw new Error(mapCommandError(result.error, lastListTitle));
             }
         });
     };
@@ -337,7 +351,7 @@ function ItemSection({
     );
 }
 
-function mapCommandError(error: { kind: string }) {
+function mapCommandError(error: { kind: string }, listName: string) {
     switch (error.kind) {
         case "LIST_LOCKED":
             return "La lista está en modo lectura.";
@@ -346,9 +360,11 @@ function mapCommandError(error: { kind: string }) {
         case "ITEM_NOT_FOUND":
             return "No se encontró el producto.";
         case "FORBIDDEN":
-            return "No tienes permisos para editar esta lista.";
+            return "Ya no tienes permisos para modificar esta lista.";
+        case "LIST_NOT_FOUND":
+            return `Ya no tienes permisos para modificar la lista "${listName}".`;
         case "UNAUTHORIZED":
-            return "Inicia sesión para continuar.";
+            return "Sesión expirada. Vuelve a iniciar sesión.";
         default:
             return "No se pudo completar la acción.";
     }

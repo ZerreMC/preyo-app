@@ -24,9 +24,9 @@ export type CreateListInput = {
 };
 
 type CreateListModalProps = {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
     onCreate?: (input: CreateListInput) => void;
+    onOpenChange: (open: boolean) => void;
+    open: boolean;
 };
 
 export function CreateListModal({open, onOpenChange, onCreate}: CreateListModalProps) {
@@ -68,7 +68,7 @@ export function CreateListModal({open, onOpenChange, onCreate}: CreateListModalP
         <AnimatePresence>
             {open ? (
                 <motion.div
-                    className="fixed inset-0 z-[80] flex flex-col justify-end bg-[rgba(31,42,36,0.5)] backdrop-blur-[6px]"
+                    className="fixed inset-0 z-80 flex flex-col justify-end bg-[rgba(31,42,36,0.5)] backdrop-blur-[6px]"
                     initial={{opacity: 0}}
                     animate={{opacity: 1}}
                     exit={{opacity: 0}}
@@ -84,7 +84,7 @@ export function CreateListModal({open, onOpenChange, onCreate}: CreateListModalP
                         exit={{y: "100%", opacity: 0}}
                         transition={{type: "spring", stiffness: 400, damping: 40}}
                         onSubmit={handleSubmit}
-                        className="max-h-[90dvh] overflow-y-auto rounded-t-[2rem] bg-bg-main p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-[0_-8px_48px_rgba(0,0,0,0.18)]"
+                        className="max-h-[90dvh] overflow-y-auto rounded-t-4xl bg-bg-main p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-[0_-8px_48px_rgba(0,0,0,0.18)]"
                         onClick={(event) => event.stopPropagation()}
                     >
                         <div className="mb-5 flex justify-center">
@@ -109,10 +109,12 @@ export function CreateListModal({open, onOpenChange, onCreate}: CreateListModalP
                         </div>
 
                         <div className="mb-5">
-                            <label htmlFor="list-name" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                            <label htmlFor="list-name"
+                                   className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-text-muted">
                                 Nombre de la lista
                             </label>
-                            <div className="flex items-center gap-3 rounded-2xl border-[1.5px] border-divider bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] focus-within:border-brand focus-within:ring-[3px] focus-within:ring-[rgba(57,184,107,0.1)]">
+                            <div
+                                className="flex items-center gap-3 rounded-2xl border-[1.5px] border-divider bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] focus-within:border-brand focus-within:ring-[3px] focus-within:ring-[rgba(57,184,107,0.1)]">
                                 <span className="text-xl">{selectedCategory.emoji}</span>
                                 <input
                                     id="list-name"
@@ -146,7 +148,8 @@ export function CreateListModal({open, onOpenChange, onCreate}: CreateListModalP
                                             ].join(" ")}
                                         >
                                             <span className="text-xl">{category.emoji}</span>
-                                            <span className={active ? "text-[10px] font-bold leading-tight text-brand-active" : "text-[10px] font-medium leading-tight text-text-muted"}>
+                                            <span
+                                                className={active ? "text-[10px] font-bold leading-tight text-brand-active" : "text-[10px] font-medium leading-tight text-text-muted"}>
                                                 {category.label}
                                             </span>
                                         </motion.button>
@@ -155,7 +158,8 @@ export function CreateListModal({open, onOpenChange, onCreate}: CreateListModalP
                             </div>
                         </div>
 
-                        <div className="mb-6 flex items-center justify-between rounded-2xl border border-divider bg-white p-4">
+                        <div
+                            className="mb-6 flex items-center justify-between rounded-2xl border border-divider bg-white p-4">
                             <div>
                                 <p className="text-[14px] font-semibold text-text-primary">Guardar como plantilla</p>
                                 <p className="text-[12px] text-text-muted">Reutiliza esta lista en futuras compras</p>

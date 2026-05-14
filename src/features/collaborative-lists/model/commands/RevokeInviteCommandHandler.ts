@@ -2,17 +2,17 @@ import type {Result, Uuid} from '../../domain/ShoppingList';
 import {type ListRepository, RepositoryError} from '../ports/ListRepository';
 import {mapRepositoryError, type CommandError} from './shared';
 
-export type AcceptInviteCommand = { token: string };
-export type AcceptInviteCommandError = CommandError;
+export type RevokeInviteCommand = { inviteId: Uuid };
+export type RevokeInviteCommandError = CommandError;
 
-export class AcceptInviteCommandHandler {
+export class RevokeInviteCommandHandler {
     constructor(private readonly repository: ListRepository) {
     }
 
-    async execute(command: AcceptInviteCommand): Promise<Result<Uuid, AcceptInviteCommandError>> {
+    async execute(command: RevokeInviteCommand): Promise<Result<void, RevokeInviteCommandError>> {
         try {
-            const listId = await this.repository.acceptInvite(command.token);
-            return {ok: true, value: listId};
+            await this.repository.revokeInvite(command.inviteId);
+            return {ok: true, value: undefined};
         } catch (error) {
             if (!(error instanceof RepositoryError)) throw error;
             return {ok: false, error: mapRepositoryError(error)};

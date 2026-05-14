@@ -102,4 +102,12 @@ CREATE POLICY lists_insert_owner ON public.shopping_lists
     FOR INSERT
     TO authenticated
     WITH CHECK (owner_id = (select auth.uid()));
-
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopping_lists TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopping_list_items TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopping_list_collaborators TO authenticated;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopping_lists TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopping_list_items TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopping_list_collaborators TO service_role;
+
