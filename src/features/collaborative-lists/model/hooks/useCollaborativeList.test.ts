@@ -55,7 +55,7 @@ describe('useCollaborativeList', () => {
         );
 
         // Must be synchronous — no loading flash
-        expect(result.current).toEqual({list: null, isLoading: false, error: null});
+        expect(result.current).toEqual({list: null, currentUserRole: null, isLoading: false, error: null});
     });
 
     it('loads the list successfully when listId is provided', async () => {
@@ -213,6 +213,7 @@ function createCollaborativeListReadModel(
         lastCommandId: null,
         lastCommandAt: null,
         items: [],
+        currentUserRole: null,
         ...overrides,
     };
 }

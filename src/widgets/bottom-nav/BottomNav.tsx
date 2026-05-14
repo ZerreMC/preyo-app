@@ -14,12 +14,12 @@ const NAV_ITEMS: {
 }[] = [
     {id: "home", label: "Inicio", href: "/", icon: Home},
     {id: "lists", label: "Listas", href: "/lists", icon: ShoppingCart},
-    {id: "compare", label: "Tiendas", href: "/compare", icon: Store},
+    {id: "compare", label: "Tiendas", href: "/app/comparador", icon: Store},
     {id: "settings", label: "Perfil", href: "/settings", icon: User},
 ];
 
 /** Routes where the BottomNav is visible (exact match). */
-const MAIN_ROUTES = new Set(["/", "/lists", "/compare", "/settings", "/profile"]);
+const MAIN_ROUTES = new Set(["/", "/lists", "/compare", "/app/comparador", "/settings", "/profile"]);
 
 function shouldShowBottomNav(pathname: string): boolean {
     if (MAIN_ROUTES.has(pathname)) return true;
@@ -36,7 +36,7 @@ export function BottomNav() {
     return (
         <nav
             aria-label="Navegación principal"
-            className="pointer-events-none fixed inset-x-0 bottom-0 z-70 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
+            className="lg:hidden pointer-events-none fixed inset-x-0 bottom-0 z-70 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
         >
             <motion.div
                 initial={false}
@@ -72,7 +72,7 @@ export function BottomNav() {
                                     {isActive && (
                                         <motion.span
                                             layoutId="active-bottom-tab"
-                                            className="absolute inset-0 rounded-3xl bg-[rgba(57,184,107,0.14)]"
+                                            className="absolute inset-0 rounded-3xl bg-brand/14"
                                             transition={{
                                                 type: "spring",
                                                 stiffness: 400,

@@ -4,6 +4,7 @@ import {
     createTestList,
     createTestUser,
     getSupabaseIntegrationFailureSkipReason,
+    insertListCollaborator,
     supabaseIntegrationSkipReason,
 } from '../utils/supabase';
 import { getCollaborativeList, type Uuid } from '../../src/features/collaborative-lists';
@@ -54,6 +55,25 @@ describeIntegration('Collaborative Lists Queries', () => {
         expect(list).not.toBeNull();
         expect(list?.id).toBe(current.listId);
         expect(list?.items).toHaveLength(0);
+    });
+
+    it('getCollaborativeList devuelve currentUserRole OWNER para el propietario', async (context) => {
+        const current = getSetupOrSkip(context, setup, dynamicSkipReason);
+        if (!current) return;
+
+        const list = await getCollaborativeList(current.client, current.listId);
+        expect(list?.currentUserRole).toBe('OWNER');
+    });
+
+    it('getCollaborativeList devuelve currentUserRole VIEWER para un colaborador VIEWER', async (context) => {
+        const current = getSetupOrSkip(context, setup, dynamicSkipReason);
+        if (!current) return;
+
+        const viewer = await createTestUser();
+        await insertListCollaborator({listId: current.listId, userId: viewer.user.id, role: 'VIEWER'});
+
+        const list = await getCollaborativeList(viewer.client, current.listId);
+        expect(list?.currentUserRole).toBe('VIEWER');
     });
 
     it('datos consistentes tras múltiples inserts', async (context) => {

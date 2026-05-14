@@ -1,6 +1,12 @@
+import {webcrypto} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+
+if (typeof globalThis.crypto === 'undefined') {
+    // @ts-expect-error — Node 18 doesn't expose crypto as a bare global in all vitest pools
+    globalThis.crypto = webcrypto;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
