@@ -1,8 +1,13 @@
 import {createServerClient, type CookieOptions} from "@supabase/ssr";
 import {cookies} from "next/headers";
-import {assertSupabaseEnv, env} from "@/shared/config/env";
+import {assertSupabaseEnv, env, isMockDataSource} from "@/shared/config/env";
+import {createMockClient} from "./mockClient";
 
 export async function createClient() {
+    if (isMockDataSource()) {
+        return createMockClient();
+    }
+
     assertSupabaseEnv();
 
     const cookieStore = await cookies();
