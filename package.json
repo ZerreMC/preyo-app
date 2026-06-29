@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:migrate:remote": "node scripts/db/apply-migrations.mjs"
+    "db:migrate:remote": "node scripts/db/apply-migrations.mjs",
+    "db:status:remote": "node scripts/db/apply-migrations.mjs --status",
+    "db:seed:remote": "node scripts/db/apply-migrations.mjs --seed"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
