@@ -1,0 +1,6 @@
+# Force LF for SQL and the migration runner so line endings stay consistent
+# across Windows/WSL/macOS and don't show up as diffs in a shared workspace.
+# (The runner's checksum is whitespace-insensitive, but consistent EOL keeps
+#  git diffs clean.)
+*.sql  text eol=lf
+*.mjs  text eol=lf
