@@ -9,8 +9,11 @@ $$
         ORDER BY created_at ASC
         LIMIT 1;
 
+        -- Demo prices are attributed to a user. With no users yet (fresh DB / CI),
+        -- skip them instead of failing so `supabase db reset` works headless.
         IF v_user_id IS NULL THEN
-            RAISE EXCEPTION 'seed.sql requiere crear primero un usuario desde /sign-up';
+            RAISE NOTICE 'Sin usuarios en auth.users: se omiten los precios demo (regístrate en /sign-up y re-siembra).';
+            RETURN;
         END IF;
         INSERT INTO public.price_entries (id, product_id, store_id, user_id, price_cents, currency, source,
                                           recorded_at, created_at)
