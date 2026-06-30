@@ -54,6 +54,10 @@ next-env.d.ts
 .agents/
 .idea/
 
+# AI-agent context / instructions — local only (like .agents/ and AGENTS.md above)
+.claude/
+CLAUDE.md
+
 # Supabase local state (generated, not source of truth)
 supabase/.temp/
 supabase/.branches/

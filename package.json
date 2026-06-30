@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate:remote": "node scripts/db/apply-migrations.mjs",
-    "db:migrate:prod": "supabase db push --project-ref xixrngrajnvfqqopwhun"
+    "db:status:remote": "node scripts/db/apply-migrations.mjs --status",
+    "db:seed:remote": "node scripts/db/apply-migrations.mjs --seed"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
