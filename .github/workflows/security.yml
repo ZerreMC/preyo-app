@@ -1,7 +1,3 @@
-# Destino: .github/workflows/security.yml  (nuevo)
-# Correcciones vs propuesta: comillas simples en la expresión (== 'pull_request'), Node 24.
-# dependency-review va non-blocking porque en repos privados sin GitHub Advanced Security
-# puede no estar disponible; quítale continue-on-error cuando el repo sea público o tengas GHAS.
 name: Security
 
 on:

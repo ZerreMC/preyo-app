@@ -1,8 +1,3 @@
-# Destino: .github/workflows/db-check.yml  (nuevo)
-# Valida que TODAS las migraciones aplican limpias desde cero en un Postgres efímero
-# (Supabase local en el runner) y que toda tabla public tiene RLS activada.
-# Fuente de verdad = repo, NO un entorno externo. El seed ya no falla sin usuario
-# (20_price_entries.sql omite los precios demo si no hay auth.users).
 name: DB Check
 
 on:
@@ -12,6 +7,8 @@ on:
       - "supabase/seed/**"
       - "supabase/config.toml"
       - "scripts/db/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
       - ".github/workflows/db-check.yml"
   push:
     branches: [main, mvp/integration, develop]
@@ -20,6 +17,8 @@ on:
       - "supabase/seed/**"
       - "supabase/config.toml"
       - "scripts/db/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
       - ".github/workflows/db-check.yml"
 
 permissions:
@@ -37,20 +36,28 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
+      - uses: pnpm/action-setup@v4
 
-      # Excluimos servicios pesados/flaky (analytics/logflare fue el que petaba en el LXC).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # CLI de Supabase pineada por el lockfile (supabase@2.98.1), no `latest`,
+      # para que la validación sea reproducible. Excluimos servicios pesados/flaky
+      # (logflare era el que petaba en el LXC).
       - name: Start Supabase (servicios mínimos)
-        run: supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor
+        run: pnpm exec supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor
 
       - name: Reset — todas las migraciones aplican desde cero (+ seed)
-        run: supabase db reset
+        run: pnpm exec supabase db reset --yes
 
       - name: RLS activada en todas las tablas public
         run: |
-          MISSING=$(supabase db query --local -o csv "
+          MISSING=$(pnpm exec supabase db query --local -o csv "
             SELECT c.relname
             FROM pg_class c
             JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -66,4 +73,4 @@ jobs:
 
       - name: Stop Supabase
         if: always()
-        run: supabase stop --no-backup
+        run: pnpm exec supabase stop --no-backup

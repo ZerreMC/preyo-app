@@ -1,7 +1,3 @@
-# Destino: .github/workflows/ci.yml  (reemplaza al actual)
-# Correcciones vs propuesta: Node 24 (engines del repo), NEXT_PUBLIC_PREYO_DATA_SOURCE=supabase
-# (sin esto next build lanza por el guard de env.ts), PR sin filtro de rama (la PR va contra
-# mvp/integration), checkout@v5, y chequeo de whitespace/EOL solo en PR.
 name: CI
 
 on:
