@@ -1,0 +1,64 @@
+# Destino: .github/workflows/db-types.yml  (reemplaza al roto que apuntaba a Cloud)
+# Genera database.types.ts desde las migraciones del REPO (Supabase local) y lo compara
+# con el commiteado. Nunca usa --project-id (la nube tiene esquema viejo).
+#
+# IMPORTANTE: el fichero commiteado debe generarse con la MISMA versión del CLI que aquí,
+# o el diff fallará por formato. Para obtener el correcto: lanza este workflow una vez,
+# descarga el artifact "database.types.ts" y commitéalo. Por eso el CLI va PINNEADO.
+name: DB Types
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "src/shared/api/supabase/types/**"
+      - ".github/workflows/db-types.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-types-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  types:
+    name: types
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.98.1   # pin: súbelo cuando regeneres el fichero commiteado
+
+      - name: Start Supabase (servicios mínimos)
+        run: supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor
+
+      - name: Generate types from local migrations
+        run: |
+          mkdir -p src/shared/api/supabase/types
+          supabase gen types typescript --local > /tmp/generated.types.ts
+
+      - name: Upload generated types (para commitear el correcto)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database.types.ts
+          path: /tmp/generated.types.ts
+
+      - name: Compare with committed types
+        run: |
+          if ! diff -q src/shared/api/supabase/types/database.types.ts /tmp/generated.types.ts >/dev/null 2>&1; then
+            echo "::error::Los tipos commiteados no coinciden con las migraciones."
+            echo "Arréglalo: descarga el artifact 'database.types.ts' de este run y commitéalo,"
+            echo "o regenera en una máquina con Docker: supabase start && supabase gen types typescript --local > src/shared/api/supabase/types/database.types.ts"
+            diff -u src/shared/api/supabase/types/database.types.ts /tmp/generated.types.ts || true
+            exit 1
+          fi
+          echo "OK: tipos en sync con las migraciones."
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup
