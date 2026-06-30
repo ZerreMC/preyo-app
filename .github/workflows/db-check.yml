@@ -1,0 +1,73 @@
+name: DB Check
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/seed/**"
+      - "supabase/config.toml"
+      - "scripts/db/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/db-check.yml"
+  push:
+    branches: [main, mvp/integration, develop]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/seed/**"
+      - "supabase/config.toml"
+      - "scripts/db/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/db-check.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrations:
+    name: migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Start Supabase
+        run: pnpm exec supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor
+
+      - name: Reset database
+        run: pnpm exec supabase db reset --yes
+
+      - name: Check public RLS
+        run: |
+          MISSING=$(pnpm exec supabase db query --local -o csv "
+            SELECT c.relname
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'public'
+              AND c.relkind = 'r'
+              AND NOT c.relrowsecurity
+              AND c.relname NOT IN ('schema_migrations');
+          " | tail -n +2 | tr -d '\r')
+          if [ -n "$MISSING" ]; then
+            echo "::error::Public tables without RLS:"; echo "$MISSING"; exit 1
+          fi
+          echo "OK: RLS enabled on all public tables."
+
+      - name: Stop Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
