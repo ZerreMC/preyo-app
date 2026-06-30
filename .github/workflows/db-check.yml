@@ -46,13 +46,16 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Start Supabase
+      # CLI de Supabase pineada por el lockfile (supabase@2.98.1), no `latest`,
+      # para que la validación sea reproducible. Excluimos servicios pesados/flaky
+      # (logflare era el que petaba en el LXC).
+      - name: Start Supabase (servicios mínimos)
         run: pnpm exec supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor
 
-      - name: Reset database
+      - name: Reset — todas las migraciones aplican desde cero (+ seed)
         run: pnpm exec supabase db reset --yes
 
-      - name: Check public RLS
+      - name: RLS activada en todas las tablas public
         run: |
           MISSING=$(pnpm exec supabase db query --local -o csv "
             SELECT c.relname
@@ -64,9 +67,9 @@ jobs:
               AND c.relname NOT IN ('schema_migrations');
           " | tail -n +2 | tr -d '\r')
           if [ -n "$MISSING" ]; then
-            echo "::error::Public tables without RLS:"; echo "$MISSING"; exit 1
+            echo "::error::Tablas public SIN RLS:"; echo "$MISSING"; exit 1
           fi
-          echo "OK: RLS enabled on all public tables."
+          echo "OK: RLS activa en todas las tablas public."
 
       - name: Stop Supabase
         if: always()

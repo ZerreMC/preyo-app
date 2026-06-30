@@ -12,7 +12,6 @@
 
 # testing
 /coverage
-AGENTS.md
 
 # next.js
 /.next/
@@ -53,10 +52,6 @@ next-env.d.ts
 .zed/
 .agents/
 .idea/
-
-# AI-agent context / instructions — local only (like .agents/ and AGENTS.md above)
-.claude/
-CLAUDE.md
 
 # Supabase local state (generated, not source of truth)
 supabase/.temp/

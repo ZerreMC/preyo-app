@@ -36,7 +36,7 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Whitespace / EOL
+      - name: Whitespace / EOL (solo PR)
         if: github.event_name == 'pull_request'
         run: git diff --check "origin/${{ github.base_ref }}...HEAD"
 
